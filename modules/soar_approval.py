@@ -1,0 +1,296 @@
+"""
+modules/soar_approval.py - Tactical 1-Click SOAR, RBAC Approvals & Audit Trail
+Handles automated defense response packages, RBAC commander approvals, and cryptographic audit logging.
+"""
+
+import streamlit as st
+import pandas as pd
+import json
+from datetime import datetime
+from utils.pdf_exporter import generate_sitrep_pdf, export_takedown_dossier_json
+from utils.data_generator import PRIMARY_INCIDENTS
+
+def init_audit_logs():
+    """Initializes session state audit trail if not present."""
+    if "audit_logs" not in st.session_state:
+        st.session_state["audit_logs"] = [
+            {
+                "timestamp": "2026-10-20 14:10:22 WIB",
+                "user": "Mayor Arh. Dedi (Pussiberad)",
+                "role": "Analis Siber (Pussiberad)",
+                "action": "DETEKSI INSIDEN",
+                "target": "THREAT-2026-ALPHA (Voice Clone Panglima)",
+                "status": "DRAFT DISUSUN",
+                "hash": "8f4a9b7c...21d0"
+            },
+            {
+                "timestamp": "2026-10-20 14:25:08 WIB",
+                "user": "Kapten Inf. Sarah (Dispenad)",
+                "role": "Komunikasi Publik / Penerangan (Dispenad)",
+                "action": "REVIEW NARASI KLARIFIKASI",
+                "target": "Infografis Side-by-Side Debunk",
+                "status": "TERVERIFIKASI DISPENAD",
+                "hash": "3d1b8e62...45a1"
+            }
+        ]
+        
+    if "approved_incidents" not in st.session_state:
+        st.session_state["approved_incidents"] = set()
+
+def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
+    """Renders the Tactical SOAR & RBAC Approval Command Center."""
+    init_audit_logs()
+    
+    st.markdown("## ⚡ TACTICAL SOAR & PENGAMBILAN KEPUTUSAN C2")
+    st.markdown(
+        "<p style='color: #94A3B8; font-size: 0.95rem; margin-top: -10px;'>"
+        "Security Orchestration, Automation & Response (SOAR): Eksekusi Paket Aksi Pertahanan, Persetujuan Komando (RBAC), & Jejak Audit Kriptografi."
+        "</p>",
+        unsafe_allow_html=True
+    )
+    
+    tab_soar, tab_rbac, tab_audit = st.tabs([
+        "📦 PAKET AKSI PERTAHANAN 1-KLIK (SOAR)",
+        "🎖️ ALUR PERSETUJUAN KOMANDAN (RBAC)",
+        "📜 LOG JEJAK AUDIT TAKTIS (OPSEC AUDIT TRAIL)"
+    ])
+    
+    # -------------------------------------------------------------
+    # TAB 1: 1-CLICK DEFENSE ACTION PACKAGE
+    # -------------------------------------------------------------
+    with tab_soar:
+        st.markdown("### 🚀 GENERATOR PAKET PENANGGULANGAN OPERASI KOGNITIF (1-CLICK SOAR)")
+        st.markdown(
+            "Mengompilasi berkas intelijen taktis lengkap menjadi format standar inter-agensi: "
+            "Dossier Takedown BSSN/Kominfo, Executive SITREP Dokumen Resmi PDF, dan Brief Cek Fakta Media."
+        )
+        
+        inc_options = {inc["id"]: f"[{inc['level'].upper()}] {inc['title']}" for inc in PRIMARY_INCIDENTS}
+        selected_inc_id = st.selectbox(
+            "Pilih Insiden Ancaman untuk Dibuatkan Paket Penanggulangan:",
+            options=list(inc_options.keys()),
+            format_func=lambda x: inc_options[x]
+        )
+        
+        active_inc = next(item for item in PRIMARY_INCIDENTS if item["id"] == selected_inc_id)
+        is_approved = selected_inc_id in st.session_state["approved_incidents"]
+        
+        col_summary, col_downloads = st.columns([7, 5])
+        
+        with col_summary:
+            status_text = "DISETUJUI OLEH KOMANDAN" if is_approved else "MENUNGGU PERSETUJUAN PERWIRA MENENGAH"
+            status_color = "#10B981" if is_approved else "#F59E0B"
+            
+            st.markdown(
+                f"""
+                <div class="tactical-card" style="border-left: 3px solid {status_color}; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-family: 'JetBrains Mono'; font-size: 0.75rem; color: #38BDF8;">
+                            REGISTER: SOAR/{active_inc['id']}/TNI-AD
+                        </span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: {status_color}; font-weight: bold; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid {status_color};">
+                            {status_text}
+                        </span>
+                    </div>
+                    <h4 style="margin: 0 0 6px 0; color: #FFFFFF;">{active_inc['title']}</h4>
+                    <p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 12px;">{active_inc['sample_text']}</p>
+                    
+                    <div style="background: #0B1120; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.75rem; color: #94A3B8;">
+                        <div>• Yurisdiksi: <b style="color: #F8FAFC;">{active_inc['target_kodam']}</b></div>
+                        <div>• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{active_inc['cib_cluster_size']} Akun Bot Terverifikasi</b></div>
+                        <div>• Bukti Sintetis: <b style="color: #22D3EE;">Neural Vocoder 16kHz Cutoff / MD5 e99a18c4...</b></div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # Fact-Checking Infographic Brief
+            st.markdown("#### 📢 Materi Briefing Komunikasi Publik Dispenad")
+            brief_text = f"""
+            **Poin Kunci Cek Fakta (Talking Points Dispenad):**
+            1. **Fakta 1:** Panglima TNI AD tidak pernah mengeluarkan instruksi suara tersebut.
+            2. **Fakta 2:** Analisis laboratorium Pussiberad memastikan audio 94.2% diproduksi oleh software AI Voice Synthesizer.
+            3. **Fakta 3:** Kondisi teritorial jajaran Kodam terkait saat ini dalam situasi aman, damai, dan solid bersama masyarakat.
+            4. **Visual Guideline:** Publikasikan infografis 'Side-by-Side Debunk' mencantumkan watermark resmi DISPENAD.
+            """
+            st.info(brief_text)
+
+        with col_downloads:
+            st.markdown("#### 📥 Unduh Berkas Eksekusi Pertahanan")
+            
+            # Generate SITREP PDF
+            approver_label = "Kolonel Inf. Bambang S. (Danpussiberad)" if is_approved else "Draf Belum Disahkan"
+            pdf_bytes = generate_sitrep_pdf(active_inc, approver_name=approver_label)
+            
+            # Generate JSON Dossier
+            json_str = export_takedown_dossier_json(active_inc)
+            
+            st.download_button(
+                label="📄 Unduh Executive SITREP Resmi (PDF Standar Militer)",
+                data=pdf_bytes,
+                file_name=f"SITREP_{active_inc['id']}_TNI_AD.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+            st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
+            
+            st.download_button(
+                label="⚡ Unduh Takedown Dossier (JSON Standar BSSN/Kominfo)",
+                data=json_str,
+                file_name=f"TAKEDOWN_DOSSIER_{active_inc['id']}_BSSN.json",
+                mime="application/json",
+                use_container_width=True
+            )
+            
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            
+            st.markdown("#### 🛰️ Interoperabilitas Sistem Mitra:")
+            st.markdown(
+                """
+                <div style="background: #111C2E; border: 1px solid #1E293B; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.75rem;">
+                    <div style="color: #10B981;">● BSSN National CSIRT API: ONLINE</div>
+                    <div style="color: #10B981;">● Kominfo AIS Engine: TERKONEKSI</div>
+                    <div style="color: #10B981;">● Dittipidsiber Bareskrim: READY</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            if st.button("📡 Kirimkan Dossier Takedown Otomatis ke API BSSN", type="primary", use_container_width=True):
+                if not is_approved:
+                    st.warning("⚠️ Perhatian: Paket SOAR belum disetujui secara digital oleh Komandan. Hanya paket berstatus 'Approved' yang dapat dikirim otomatis.")
+                else:
+                    st.success(f"✅ Berhasil ditransmisikan ke BSSN Gateway! Tiket ID: #BSSN-TKD-{active_inc['id']}")
+                    st.session_state["audit_logs"].insert(0, {
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+                        "user": current_role,
+                        "role": current_role,
+                        "action": "TRANSMISI DOSSIER BSSN",
+                        "target": active_inc["id"],
+                        "status": "TERKIRIM INTER-AGENCY",
+                        "hash": "a4c7e190...77b2"
+                    })
+
+    # -------------------------------------------------------------
+    # TAB 2: RBAC COMMANDER APPROVAL
+    # -------------------------------------------------------------
+    with tab_rbac:
+        st.markdown("### 🎖️ RUKUN OTORISASI BERJENJANG (ROLE-BASED ACCESS CONTROL)")
+        st.markdown(
+            "Menjaga *Chain of Command* dan akuntabilitas hukum. Hanya peran **Perwira Menengah / Komandan** "
+            "yang berhak memberikan otorisasi penindakan dan membubuhkan tanda tangan kriptografis."
+        )
+        
+        # Display Current Active Role
+        st.markdown(
+            f"""
+            <div style="background: #0B1120; border: 1px solid #334155; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px;">
+                <span style="font-family: 'JetBrains Mono'; font-size: 0.78rem; color: #94A3B8;">PERAN PENGGUNA SAAT INI:</span>
+                <span style="font-family: 'Chakra Petch'; font-size: 1.15rem; font-weight: bold; color: #22D3EE; margin-left: 10px;">
+                    {current_role}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        col_approval_left, col_approval_right = st.columns([7, 5])
+        
+        with col_approval_left:
+            st.markdown("#### Daftar Antrean Permohonan Otorisasi SOAR")
+            
+            for inc in PRIMARY_INCIDENTS:
+                inc_id = inc["id"]
+                already_approved = inc_id in st.session_state["approved_incidents"]
+                btn_disabled = already_approved or ("Komandan" not in current_role)
+                
+                with st.container():
+                    st.markdown(
+                        f"""
+                        <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {'#10B981' if already_approved else '#EF4444'}; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.72rem;">
+                                <span style="color: #38BDF8;">{inc_id}</span>
+                                <span style="color: {'#10B981' if already_approved else '#F59E0B'}; font-weight: bold;">
+                                    {'[STATUS: DISETUJUI KOMANDAN]' if already_approved else '[MENUNGGU PERSETUJUAN]'}
+                                </span>
+                            </div>
+                            <div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc['title']}</div>
+                            <div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{inc['level']}</b> | Yurisdiksi: {inc['target_kodam']}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    
+                    if not already_approved:
+                        if "Komandan" in current_role:
+                            if st.button(f"✍️ Setujui & Tanda Tangan Digital ({inc_id})", key=f"appr_{inc_id}", type="primary"):
+                                st.session_state["approved_incidents"].add(inc_id)
+                                st.session_state["audit_logs"].insert(0, {
+                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+                                    "user": f"Kolonel Bambang ({current_role})",
+                                    "role": current_role,
+                                    "action": "DIGITAL SIGNATURE APPROVAL",
+                                    "target": inc_id,
+                                    "status": "APPROVED & ENCRYPTED",
+                                    "hash": "e5c94b21...99f0"
+                                })
+                                st.success(f"Insiden {inc_id} berhasil disetujui dan ditandatangani secara digital!")
+                                st.rerun()
+                        else:
+                            st.caption(f"🔒 Tombol persetujuan terkunci. Pindah ke peran 'Perwira Menengah / Komandan' di sidebar untuk menandatangani.")
+                    else:
+                        st.caption("✅ Dokumen telah ditandatangani secara kriptografis SHA-256.")
+
+        with col_approval_right:
+            st.markdown("#### Matriks Hak Akses (RBAC Matrix)")
+            
+            rbac_data = [
+                {"Aksi Sistem": "Buat Draf Analisis Ancaman", "Pussiberad": "✅ YA", "Dispenad": "✅ YA", "Komandan": "✅ YA"},
+                {"Aksi Sistem": "Uji Wargaming & Personas", "Pussiberad": "✅ YA", "Dispenad": "✅ YA", "Komandan": "✅ YA"},
+                {"Aksi Sistem": "Klarifikasi Pers Dispenad", "Pussiberad": "❌ Tinjau", "Dispenad": "✅ Rilis", "Komandan": "✅ Otorisasi"},
+                {"Aksi Sistem": "Persetujuan Takedown Eksternal", "Pussiberad": "❌ Draf", "Dispenad": "❌ Tinjau", "Komandan": "✅ MUTLAK"},
+                {"Aksi Sistem": "Tanda Tangan Kriptografi", "Pussiberad": "❌ Dilarang", "Dispenad": "❌ Dilarang", "Komandan": "✅ SAH"}
+            ]
+            
+            st.dataframe(
+                pd.DataFrame(rbac_data),
+                hide_index=True,
+                use_container_width=True
+            )
+
+    # -------------------------------------------------------------
+    # TAB 3: TACTICAL AUDIT TRAIL LOG (OPSEC)
+    # -------------------------------------------------------------
+    with tab_audit:
+        st.markdown("### 📜 LOG JEJAK AUDIT TAKTIS (CRYPTOGRAPHIC AUDIT TRAIL)")
+        st.markdown(
+            "Pencatatan setiap aktivitas analisis, persetujuan komando, dan transmisi paket penanggulangan secara *tamper-evident* "
+            "untuk menjamin kepatuhan hukum militer dan OPSEC (Operational Security)."
+        )
+        
+        audit_df = pd.DataFrame(st.session_state["audit_logs"])
+        
+        st.dataframe(
+            audit_df,
+            column_config={
+                "timestamp": st.column_config.TextColumn("Waktu Kejadian", width="medium"),
+                "user": st.column_config.TextColumn("Nama Personel", width="medium"),
+                "role": st.column_config.TextColumn("Peran Jabatan", width="medium"),
+                "action": st.column_config.TextColumn("Aksi Sistem", width="medium"),
+                "target": st.column_config.TextColumn("Sasaran / Insiden", width="medium"),
+                "status": st.column_config.TextColumn("Status Integritas", width="small"),
+                "hash": st.column_config.TextColumn("SHA-256 Signature", width="small")
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=340
+        )
+        
+        st.download_button(
+            label="📥 Ekspor Log Audit Lengkap (CSV Terenkripsi)",
+            data=audit_df.to_csv(index=False),
+            file_name="AUDIT_LOG_SENTINEL_AD.csv",
+            mime="text/csv"
+        )
