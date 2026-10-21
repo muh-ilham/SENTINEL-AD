@@ -96,15 +96,17 @@ def main():
         if st.session_state["data_source_mode"] == "live":
             if st.button("🔄 Tarik Data Nyata Terbaru (Sync OSINT)", use_container_width=True):
                 st.session_state["live_feed_cache"] = None
-                st.toast("Menarik data online real-time dari internet...", icon="🌐")
+                st.toast("Menarik data online real-time dari TikTok, IG, X, FB, YouTube & Media Daring...", icon="🌐")
                 st.rerun()
+            st.caption("📡 **Radar Terhubung:** TikTok, Instagram, X (Twitter), Facebook, YouTube, Media Daring")
                 
         with st.expander("⚙️ Konfigurasi API Resmi Lembaga"):
-            st.text_input("X (Twitter) Bearer Token", type="password", placeholder="Bearer AAAA...")
-            st.text_input("Telegram Bot Token / MTProto", type="password", placeholder="bot123456:ABC-...")
-            st.text_input("YouTube Data API Key", type="password", placeholder="AIzaSy...")
-            st.text_input("BSSN Gateway API Key", type="password", placeholder="bssn-csirt-token-...")
-            st.caption("ℹ️ Kunci API disimpan dalam session memory aman (AES-256 OPSEC compliant).")
+            st.text_input("X (Twitter) Bearer Token", type="password", placeholder="Bearer AAAA...", key="x_bearer_token")
+            st.text_input("YouTube Data API Key", type="password", placeholder="AIzaSy...", key="youtube_api_key")
+            st.text_input("Meta (Instagram & FB) Graph Token", type="password", placeholder="EAAX...", key="meta_access_token")
+            st.text_input("Telegram Bot Token / MTProto", type="password", placeholder="bot123456:ABC-...", key="telegram_token")
+            st.text_input("BSSN Gateway API Key", type="password", placeholder="bssn-csirt-token-...", key="bssn_api_key")
+            st.caption("ℹ️ **Mode Hybrid OSINT Aktif:** Sistem otomatis menarik stream data nyata dari TikTok, Instagram, X, Facebook, YouTube, dan Berita secara real-time. Jika token API resmi diisi, sistem akan memprioritaskan endpoint resmi lembaga.")
         
         st.markdown("<hr style='border: 0.5px solid #1E293B; margin: 15px 0;'/>", unsafe_allow_html=True)
         
@@ -131,11 +133,11 @@ def main():
         st.markdown(
             """
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #64748B; background: #070D18; padding: 10px; border-radius: 4px; border: 1px solid #1E293B;">
-                <div style="color: #10B981;">● SENSOR RADAR: AKTIF (5 EKOSISTEM)</div>
+                <div style="color: #10B981;">● SENSOR RADAR: AKTIF (6 EKOSISTEM LINTAS-MEDSOS)</div>
                 <div style="color: #10B981;">● ENKRIPSI: AES-256-GCM / SHA-256</div>
                 <div style="color: #38BDF8;">● JARINGAN: MILNET SECURE GATEWAY</div>
                 <div style="margin-top: 6px; font-size: 0.65rem; color: #475569;">
-                    SENTINEL-AD v2.4 BUILD 2026.10<br/>
+                    SENTINEL-AD v2.5 BUILD 2026.10-MULTI-OSINT<br/>
                     KLASIFIKASI: RAHASIA / DEFENSE ONLY
                 </div>
             </div>

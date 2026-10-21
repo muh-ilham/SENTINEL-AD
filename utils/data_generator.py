@@ -124,7 +124,7 @@ def generate_threat_feed(n=50, seed=42):
     random.seed(seed)
     np.random.seed(seed)
     
-    platforms = ["X (Twitter)", "Telegram", "TikTok", "YouTube", "Media Daring"]
+    platforms = ["TikTok", "Instagram", "X (Twitter)", "Facebook", "YouTube", "Telegram", "Media Daring"]
     threat_levels = ["Kritis", "Tinggi", "Sedang", "Rendah"]
     statuses = ["Investigasi Pussiberad", "Deepfake Terdeteksi", "Terkonfirmasi Hoaks", "Tindakan SOAR Siap", "Klarifikasi Dispenad Dirilis"]
     kodam_names = list(KODAM_REGIONS.keys())

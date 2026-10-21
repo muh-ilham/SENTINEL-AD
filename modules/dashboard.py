@@ -230,9 +230,19 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
         with col_chart1:
             plat_counts = feed_df["platform"].value_counts().reset_index()
             plat_counts.columns = ["Platform", "Total"]
+            platform_color_map = {
+                "TikTok": "#FE2C55",
+                "Instagram": "#E1306C",
+                "X (Twitter)": "#38BDF8",
+                "Facebook": "#1877F2",
+                "YouTube": "#EF4444",
+                "Media Daring": "#06B6D4",
+                "Telegram": "#0088CC"
+            }
             fig_plat = px.pie(
                 plat_counts, values="Total", names="Platform", hole=0.55,
-                color_discrete_sequence=["#06B6D4", "#3B82F6", "#8B5CF6", "#EC4899", "#F59E0B"]
+                color="Platform",
+                color_discrete_map=platform_color_map
             )
             fig_plat.update_layout(
                 title={"text": "Vektor Sebaran Platform", "font": {"family": "Chakra Petch", "size": 14, "color": "#F8FAFC"}},
@@ -330,9 +340,11 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                 ["Semua Kodam"] + list(KODAM_REGIONS.keys())
             )
         with f_col3:
+            all_known_plats = ["TikTok", "Instagram", "X (Twitter)", "Facebook", "YouTube", "Telegram", "Media Daring"]
+            present_plats = [p for p in all_known_plats if p in feed_df["platform"].values]
             filter_platform = st.selectbox(
                 "Filter Platform Media:",
-                ["Semua Platform", "Media Daring", "X (Twitter)", "TikTok", "YouTube", "Telegram"]
+                ["Semua Platform"] + present_plats
             )
         with f_col4:
             items_per_page = st.selectbox(
