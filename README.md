@@ -68,4 +68,4 @@ Aplikasi akan otomatis terbuka pada peramban web di alamat: `http://localhost:85
 ---
 
 ## 🎖️ Tim Pengembang
-*Hak Cipta © 2026 - SENTINEL-AD Cognitive Operations System (Inovasi Hackathon TNI AD)*
+*Hak Cipta © 2026 muhammad ilham - SENTINEL-AD Cognitive Operations System (Inovasi Hackathon TNI AD)*
