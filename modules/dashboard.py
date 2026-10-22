@@ -13,6 +13,7 @@ import math
 from datetime import datetime
 from utils.theme import render_metric_card
 from utils.data_generator import generate_threat_feed, generate_kodam_geo_summary, KODAM_REGIONS
+from utils.soar_storage import check_is_escalated, add_escalated_incident
 
 def render_dashboard(current_role="Analis Siber (Pussiberad)"):
     """Renders the executive C2 dashboard and dedicated Full Incident Radar Hub."""
@@ -470,30 +471,20 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                     with col_act_right:
                         st.markdown("**Aksi Cepat Pengambil Keputusan:**")
                         
-                        # Initialize SOAR escalated queue in session_state
-                        if "escalated_soar_incidents" not in st.session_state:
-                            st.session_state["escalated_soar_incidents"] = {}
-                            
-                        is_escalated = alert["id"] in st.session_state["escalated_soar_incidents"]
+                        # Check persistent storage (matches by ID and by headline across refreshes)
+                        is_escalated, esc_info = check_is_escalated(alert)
                         
                         if is_escalated:
-                            esc_info = st.session_state["escalated_soar_incidents"][alert["id"]]
                             st.button(
                                 f"✅ TELAH DIESKALASIKAN KE SOAR",
                                 key=f"soar_btn_{alert['id']}_done",
                                 disabled=True,
                                 use_container_width=True
                             )
-                            st.markdown(
-                                f"""
-                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 8px; border-radius: 4px; margin: 4px 0 8px 0;">
-                                    ✓ <b>STATUS:</b> DIESKALASI KE SOAR<br/>
-                                    ⏱ <b>Waktu:</b> {esc_info.get('escalated_at', 'Baru saja')}<br/>
-                                    👤 <b>Oleh:</b> {esc_info.get('escalated_by', current_role)}
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
+                            esc_time = esc_info.get('escalated_at', 'Terekam di Sistem')
+                            esc_user = esc_info.get('escalated_by', current_role)
+                            status_badge_html = f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 8px; border-radius: 4px; margin: 4px 0 8px 0;">✓ <b>STATUS:</b> DIESKALASI KE SOAR<br/>⏱ <b>Waktu:</b> {esc_time}<br/>👤 <b>Oleh:</b> {esc_user}</div>"""
+                            st.markdown(status_badge_html, unsafe_allow_html=True)
                         else:
                             if st.button(f"🚨 Eskalasikan ke SOAR ({alert['id']})", key=f"soar_btn_{alert['id']}", type="primary", use_container_width=True):
                                 now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
@@ -527,20 +518,15 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                                     "escalated_by": role_actor,
                                     "is_from_radar": True
                                 }
+                                
+                                # Save permanently to disk storage
+                                add_escalated_incident(soar_payload)
+                                
+                                # Also update session state for immediate UI reaction
+                                if "escalated_soar_incidents" not in st.session_state:
+                                    st.session_state["escalated_soar_incidents"] = {}
                                 st.session_state["escalated_soar_incidents"][alert["id"]] = soar_payload
                                 
-                                # Register event in cryptographic audit logs
-                                if "audit_logs" not in st.session_state:
-                                    st.session_state["audit_logs"] = []
-                                st.session_state["audit_logs"].insert(0, {
-                                    "timestamp": now_wib,
-                                    "user": role_actor,
-                                    "role": role_actor,
-                                    "action": "ESKALASI KE SOAR",
-                                    "target": f"{alert['id']} - {alert['headline'][:35]}...",
-                                    "status": "MENUNGGU OTORISASI KOMANDAN",
-                                    "hash": f"{alert['id'].lower().replace('-', '')}e8a1"
-                                })
                                 st.toast(f"Insiden {alert['id']} berhasil dimasukkan ke Antrean Persetujuan SOAR!", icon="🛡️")
                                 st.rerun()
                             

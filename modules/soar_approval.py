@@ -9,40 +9,27 @@ import json
 from datetime import datetime
 from utils.pdf_exporter import generate_sitrep_pdf, export_takedown_dossier_json
 from utils.data_generator import PRIMARY_INCIDENTS
+from utils.soar_storage import (
+    get_escalated_incidents,
+    get_approved_incidents,
+    mark_incident_approved,
+    get_audit_logs
+)
 
 def init_audit_logs():
-    """Initializes session state audit trail if not present."""
+    """Initializes session state audit trail and approvals from persistent storage."""
     if "audit_logs" not in st.session_state:
-        st.session_state["audit_logs"] = [
-            {
-                "timestamp": "2026-10-20 14:10:22 WIB",
-                "user": "Mayor Arh. Dedi (Pussiberad)",
-                "role": "Analis Siber (Pussiberad)",
-                "action": "DETEKSI INSIDEN",
-                "target": "THREAT-2026-ALPHA (Voice Clone Panglima)",
-                "status": "DRAFT DISUSUN",
-                "hash": "8f4a9b7c...21d0"
-            },
-            {
-                "timestamp": "2026-10-20 14:25:08 WIB",
-                "user": "Kapten Inf. Sarah (Dispenad)",
-                "role": "Komunikasi Publik / Penerangan (Dispenad)",
-                "action": "REVIEW NARASI KLARIFIKASI",
-                "target": "Infografis Side-by-Side Debunk",
-                "status": "TERVERIFIKASI DISPENAD",
-                "hash": "3d1b8e62...45a1"
-            }
-        ]
+        st.session_state["audit_logs"] = get_audit_logs()
         
     if "approved_incidents" not in st.session_state:
-        st.session_state["approved_incidents"] = set()
+        st.session_state["approved_incidents"] = get_approved_incidents()
         
     if "escalated_soar_incidents" not in st.session_state:
-        st.session_state["escalated_soar_incidents"] = {}
+        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
 
 def get_all_soar_incidents():
     """Returns combined list of dynamically escalated incidents from C2 Radar + baseline incidents."""
-    escalated_dict = st.session_state.get("escalated_soar_incidents", {})
+    escalated_dict = get_escalated_incidents()
     escalated_items = list(escalated_dict.values())
     
     # Combined with PRIMARY_INCIDENTS avoiding duplicate IDs
@@ -98,30 +85,24 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         with col_summary:
             status_text = "DISETUJUI OLEH KOMANDAN" if is_approved else "MENUNGGU PERSETUJUAN PERWIRA MENENGAH"
             status_color = "#10B981" if is_approved else "#F59E0B"
+            target_kodam_val = active_inc.get('target_kodam', active_inc.get('kodam', 'TNI AD'))
+            cib_cluster_val = active_inc.get('cib_cluster_size', active_inc.get('amplification_nodes', 28))
+            evidence_val = "Neural Vocoder 16kHz Cutoff / MD5 e99a18c4..." if not active_inc.get('is_from_radar') else f"Tautan Langsung {active_inc.get('platform', 'Medsos')} / Log Telemetri C2 SHA-256"
             
-            st.markdown(
-                f"""
-                <div class="tactical-card" style="border-left: 3px solid {status_color}; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-family: 'JetBrains Mono'; font-size: 0.75rem; color: #38BDF8;">
-                            REGISTER: SOAR/{active_inc['id']}/TNI-AD
-                        </span>
-                        <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: {status_color}; font-weight: bold; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid {status_color};">
-                            {status_text}
-                        </span>
-                    </div>
-                    <h4 style="margin: 0 0 6px 0; color: #FFFFFF;">{active_inc['title']}</h4>
-                    <p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 12px;">{active_inc['sample_text']}</p>
-                    
-                    <div style="background: #0B1120; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.75rem; color: #94A3B8;">
-                        <div>• Yurisdiksi: <b style="color: #F8FAFC;">{active_inc['target_kodam']}</b></div>
-                        <div>• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{active_inc['cib_cluster_size']} Akun Bot Terverifikasi</b></div>
-                        <div>• Bukti Sintetis: <b style="color: #22D3EE;">Neural Vocoder 16kHz Cutoff / MD5 e99a18c4...</b></div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            card_html = f"""<div class="tactical-card" style="border-left: 3px solid {status_color}; padding: 16px; margin-bottom: 15px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #38BDF8;">REGISTER: SOAR/{active_inc['id']}/TNI-AD</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: {status_color}; font-weight: bold; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid {status_color};">{status_text}</span>
+</div>
+<h4 style="margin: 0 0 6px 0; color: #FFFFFF; font-family: 'Chakra Petch', sans-serif;">{active_inc['title']}</h4>
+<p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 10px; line-height: 1.4;">{active_inc['sample_text']}</p>
+<div style="background: #0B1120; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #94A3B8;">
+<div style="margin-bottom: 3px;">• Yurisdiksi: <b style="color: #F8FAFC;">{target_kodam_val}</b></div>
+<div style="margin-bottom: 3px;">• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{cib_cluster_val} Akun Bot Terverifikasi</b></div>
+<div>• Bukti Sintetis / Telemetri: <b style="color: #22D3EE;">{evidence_val}</b></div>
+</div>
+</div>"""
+            st.markdown(card_html, unsafe_allow_html=True)
             
             # Fact-Checking Infographic Brief
             st.markdown("#### 📢 Materi Briefing Komunikasi Publik Dispenad")
@@ -236,37 +217,30 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 is_from_radar = inc.get("is_from_radar", False)
                 
                 with st.container():
-                    radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 2px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>" if is_from_radar else ""
-                    st.markdown(
-                        f"""
-                        <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {'#10B981' if already_approved else '#EF4444'}; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
-                            {radar_tag_html}
-                            <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.72rem;">
-                                <span style="color: #38BDF8;">{inc_id}</span>
-                                <span style="color: {'#10B981' if already_approved else '#F59E0B'}; font-weight: bold;">
-                                    {'[STATUS: DISETUJUI KOMANDAN]' if already_approved else '[MENUNGGU PERSETUJUAN]'}
-                                </span>
-                            </div>
-                            <div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc['title']}</div>
-                            <div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{inc.get('level', inc.get('threat_level', 'Kritis'))}</b> | Yurisdiksi: {inc.get('target_kodam', inc.get('kodam', 'Mabesad'))}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 4px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>" if is_from_radar else ""
+                    approval_status_text = "[STATUS: DISETUJUI KOMANDAN]" if already_approved else "[MENUNGGU PERSETUJUAN]"
+                    approval_status_color = "#10B981" if already_approved else "#F59E0B"
+                    card_border_color = "#10B981" if already_approved else "#EF4444"
+                    card_level = inc.get('level', inc.get('threat_level', 'Kritis'))
+                    card_kodam = inc.get('target_kodam', inc.get('kodam', 'Mabesad'))
+                    
+                    card_tab2 = f"""<div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {card_border_color}; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+{radar_tag_html}
+<div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;">
+<span style="color: #38BDF8;">{inc_id}</span>
+<span style="color: {approval_status_color}; font-weight: bold;">{approval_status_text}</span>
+</div>
+<div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc['title']}</div>
+<div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{card_level}</b> | Yurisdiksi: {card_kodam}</div>
+</div>"""
+                    st.markdown(card_tab2, unsafe_allow_html=True)
                     
                     if not already_approved:
                         if "Komandan" in current_role:
                             if st.button(f"✍️ Setujui & Tanda Tangan Digital ({inc_id})", key=f"appr_{inc_id}", type="primary"):
-                                st.session_state["approved_incidents"].add(inc_id)
-                                st.session_state["audit_logs"].insert(0, {
-                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
-                                    "user": f"Kolonel Bambang ({current_role})",
-                                    "role": current_role,
-                                    "action": "DIGITAL SIGNATURE APPROVAL",
-                                    "target": inc_id,
-                                    "status": "APPROVED & ENCRYPTED",
-                                    "hash": "e5c94b21...99f0"
-                                })
+                                mark_incident_approved(inc_id, current_role)
+                                st.session_state["approved_incidents"] = get_approved_incidents()
+                                st.session_state["audit_logs"] = get_audit_logs()
                                 st.success(f"Insiden {inc_id} berhasil disetujui dan ditandatangani secara digital!")
                                 st.rerun()
                         else:
@@ -301,7 +275,8 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             "untuk menjamin kepatuhan hukum militer dan OPSEC (Operational Security)."
         )
         
-        audit_df = pd.DataFrame(st.session_state["audit_logs"])
+        audit_records = get_audit_logs()
+        audit_df = pd.DataFrame(audit_records)
         
         st.dataframe(
             audit_df,

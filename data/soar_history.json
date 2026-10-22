@@ -1,0 +1,54 @@
+{
+  "escalated_incidents": {
+    "LIVE-261022-101": {
+      "id": "LIVE-261022-101",
+      "title": "KODIM 1603/SIKKA FASILITASI PEMBINAAN FISIK CALON PRAJURIT TNI AD",
+      "headline": "KODIM 1603/SIKKA FASILITASI PEMBINAAN FISIK CALON PRAJURIT TNI AD",
+      "platform": "TikTok",
+      "level": "Tinggi",
+      "escalated_at": "2026-10-22 08:16:32 WIB",
+      "escalated_by": "Analis Siber (Pussiberad)"
+    }
+  },
+  "approved_incidents": [
+    "LIVE-261022-101"
+  ],
+  "audit_logs": [
+    {
+      "timestamp": "2026-10-22 08:26:57 WIB",
+      "user": "Kolonel Bambang (Komandan)",
+      "role": "Komandan",
+      "action": "DIGITAL SIGNATURE APPROVAL",
+      "target": "LIVE-261022-101",
+      "status": "APPROVED & ENCRYPTED",
+      "hash": "live26102210199f0"
+    },
+    {
+      "timestamp": "2026-10-22 08:16:32 WIB",
+      "user": "Analis Siber (Pussiberad)",
+      "role": "Analis Siber (Pussiberad)",
+      "action": "ESKALASI KE SOAR",
+      "target": "LIVE-261022-101 - KODIM 1603/SIKKA FASILITASI PEMBINA...",
+      "status": "MENUNGGU OTORISASI KOMANDAN",
+      "hash": "live261022101e8a1"
+    },
+    {
+      "timestamp": "2026-10-20 14:10:22 WIB",
+      "user": "Mayor Arh. Dedi (Pussiberad)",
+      "role": "Analis Siber (Pussiberad)",
+      "action": "DETEKSI INSIDEN",
+      "target": "THREAT-2026-ALPHA (Voice Clone Panglima)",
+      "status": "DRAFT DISUSUN",
+      "hash": "8f4a9b7c...21d0"
+    },
+    {
+      "timestamp": "2026-10-20 14:25:08 WIB",
+      "user": "Kapten Inf. Sarah (Dispenad)",
+      "role": "Komunikasi Publik / Penerangan (Dispenad)",
+      "action": "REVIEW NARASI KLARIFIKASI",
+      "target": "Infografis Side-by-Side Debunk",
+      "status": "TERVERIFIKASI DISPENAD",
+      "hash": "3d1b8e62...45a1"
+    }
+  ]
+}
