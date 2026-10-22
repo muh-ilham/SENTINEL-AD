@@ -14,6 +14,8 @@ import numpy as np
 from datetime import datetime, timezone, timedelta
 import re
 import html
+import concurrent.futures
+import streamlit as st
 
 # Defense Keywords and Regional Kodam Mapping
 KODAM_KEYWORDS = {
@@ -142,31 +144,60 @@ def fetch_youtube_via_api(api_key: str, max_results: int = 15):
     except Exception:
         return []
 
-def fetch_live_online_threats():
+def _fetch_single_rss_query(args):
+    config, q = args
+    plat_name = config["platform"]
+    url = f"https://news.google.com/rss/search?q={q}&hl=id&gl=ID&ceid=ID:id"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
+    items = []
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=2.0) as response:
+            xml_data = response.read()
+            root = ET.fromstring(xml_data)
+            for item in root.findall(".//item"):
+                raw_title = item.find("title").text if item.find("title") is not None else ""
+                raw_title = html.unescape(raw_title).strip()
+                if not raw_title:
+                    continue
+                link = item.find("link").text if item.find("link") is not None else ""
+                pub_date_str = item.find("pubDate").text if item.find("pubDate") is not None else ""
+                
+                headline = raw_title
+                author = config["default_author"]
+                if " - " in raw_title:
+                    parts = raw_title.rsplit(" - ", 1)
+                    headline = parts[0].strip()
+                    source_tag = parts[1].strip()
+                    if source_tag and source_tag != plat_name:
+                        author = f"{source_tag} ({plat_name})"
+                    else:
+                        author = f"Akun Publik {plat_name}"
+                        
+                items.append({
+                    "headline": headline,
+                    "author": author,
+                    "link": link,
+                    "platform": plat_name,
+                    "pub_date_str": pub_date_str
+                })
+    except Exception:
+        pass
+    return items
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_live_online_threats(x_token: str = "", yt_key: str = ""):
     """
     Fetches actual real-time multi-platform telemetry across:
-    - TikTok
-    - Instagram
-    - X (Twitter)
-    - Facebook
-    - YouTube
-    - Media Daring (Online News)
-    
+    - TikTok, Instagram, X (Twitter), Facebook, YouTube, Media Daring
     Processes items through the TNI AD Cognitive Classification Engine.
+    Uses parallel threading and @st.cache_data for sub-second responses.
     """
     collected_items = []
     seen_titles = set()
     
-    # Check if user entered API keys in Streamlit session_state
-    x_token = ""
-    yt_key = ""
-    try:
-        import streamlit as st
-        x_token = st.session_state.get("x_bearer_token", "").strip()
-        yt_key = st.session_state.get("youtube_api_key", "").strip()
-    except Exception:
-        pass
-        
     # 1. Try Direct API for X if token exists
     if x_token:
         api_tweets = fetch_tweets_via_api(x_token)
@@ -185,69 +216,31 @@ def fetch_live_online_threats():
                 seen_titles.add(clean_v)
                 collected_items.append(v)
                 
-    # 3. High-Performance Zero-Cost Multi-Platform Stream (TikTok, Instagram, X, Facebook, YouTube, Media Daring)
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    }
-    
-    target_per_platform = 12  # Guarantees balanced distribution
-    
+    # 3. Parallel Multi-Platform Stream (TikTok, Instagram, X, Facebook, YouTube, Media Daring)
+    query_jobs = []
     for config in PLATFORM_SEARCH_CONFIGS:
         plat_name = config["platform"]
-        
-        # If already populated by official API, skip scraping for that platform
         if plat_name == "X (Twitter)" and x_token and len([c for c in collected_items if c["platform"] == "X (Twitter)"]) >= 5:
             continue
         if plat_name == "YouTube" and yt_key and len([c for c in collected_items if c["platform"] == "YouTube"]) >= 5:
             continue
-            
-        plat_items = []
         for q in config["queries"]:
-            url = f"https://news.google.com/rss/search?q={q}&hl=id&gl=ID&ceid=ID:id"
-            try:
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    xml_data = response.read()
-                    root = ET.fromstring(xml_data)
-                    
-                    for item in root.findall(".//item"):
-                        raw_title = item.find("title").text if item.find("title") is not None else ""
-                        raw_title = html.unescape(raw_title).strip()
-                        
-                        if not raw_title or raw_title in seen_titles:
-                            continue
-                        seen_titles.add(raw_title)
-                        
-                        link = item.find("link").text if item.find("link") is not None else ""
-                        pub_date_str = item.find("pubDate").text if item.find("pubDate") is not None else ""
-                        
-                        # Clean title and separate author/source
-                        headline = raw_title
-                        author = config["default_author"]
-                        if " - " in raw_title:
-                            parts = raw_title.rsplit(" - ", 1)
-                            headline = parts[0].strip()
-                            source_tag = parts[1].strip()
-                            if source_tag and source_tag != plat_name:
-                                author = f"{source_tag} ({plat_name})"
-                            else:
-                                author = f"Akun Publik {plat_name}"
-                                
-                        plat_items.append({
-                            "headline": headline,
-                            "author": author,
-                            "link": link,
-                            "platform": plat_name,
-                            "pub_date_str": pub_date_str
-                        })
-                        if len(plat_items) >= target_per_platform:
-                            break
-            except Exception:
-                continue
-            if len(plat_items) >= target_per_platform:
-                break
-                
-        collected_items.extend(plat_items)
+            query_jobs.append((config, q))
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(_fetch_single_rss_query, job) for job in query_jobs]
+            for f in concurrent.futures.as_completed(futures, timeout=3.5):
+                try:
+                    for itm in f.result():
+                        h_clean = itm["headline"]
+                        if h_clean and h_clean not in seen_titles:
+                            seen_titles.add(h_clean)
+                            collected_items.append(itm)
+                except Exception:
+                    pass
+    except Exception:
+        pass
         
     if not collected_items:
         return pd.DataFrame()

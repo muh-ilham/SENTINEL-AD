@@ -114,8 +114,10 @@ def generate_threat_feed(n=50, seed=42):
             if "live_feed_cache" in st.session_state and st.session_state["live_feed_cache"] is not None and len(st.session_state["live_feed_cache"]) > 0:
                 return st.session_state["live_feed_cache"]
             from utils.live_osint import fetch_live_online_threats
-            live_df = fetch_live_online_threats()
-            if not live_df.empty:
+            x_tok = st.session_state.get("x_bearer_token", "").strip()
+            yt_k = st.session_state.get("youtube_api_key", "").strip()
+            live_df = fetch_live_online_threats(x_token=x_tok, yt_key=yt_k)
+            if live_df is not None and not live_df.empty:
                 st.session_state["live_feed_cache"] = live_df
                 return live_df
     except Exception:
