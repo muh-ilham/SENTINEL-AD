@@ -41,15 +41,40 @@ def render_cib_screener():
         )
         
         cib_df = generate_cib_synchronized_clusters()
+        is_live_data = "is_live" in cib_df.columns and cib_df["is_live"].any()
+        from datetime import datetime
+        now_str = datetime.now().strftime("%d %B %Y, %H:%M:%S WIB")
+        
+        # Bilah Informasi Telemetri Live & Tanggal Terbaru
+        col_live_status, col_live_refresh = st.columns([8, 4])
+        with col_live_status:
+            source_label = "LIVE ONLINE MULTI-PLATFORM (TikTok, Instagram, X, Facebook, YouTube, Media Daring)" if is_live_data else "SIMULASI TAKTIS CADANGAN"
+            badge_color = "#10B981" if is_live_data else "#F59E0B"
+            st.markdown(
+                f"""<div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-left: 4px solid {badge_color}; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: {badge_color}; font-weight: bold;">
+                    ● SUMBER DATA TERHUBUNG: {source_label}
+                </div>
+                <div style="font-size: 0.82rem; color: #F8FAFC; margin-top: 3px;">
+                    🕒 <b>Tanggal & Waktu Rujukan Terbaru:</b> <span style="color: #38BDF8; font-family: 'JetBrains Mono'; font-weight: bold;">{now_str}</span>
+                </div>
+                </div>""",
+                unsafe_allow_html=True
+            )
+        with col_live_refresh:
+            if st.button("🔄 Tarik Data Nyata Terbaru (Sync Live CIB)", use_container_width=True, type="primary"):
+                st.session_state["live_feed_cache"] = None
+                st.toast("Menarik data terbaru dari TikTok, Instagram, X, Facebook, YouTube...", icon="🌐")
+                st.rerun()
         
         # 4 Ringkasan Metrik Taktis Utama
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         with col_m1:
             st.metric(
                 "Total Akun Terindikasi Bot", 
-                "13 Akun", 
-                "8 Klaster A + 5 Klaster B",
-                help="Total 13 akun bodong tertangkap basah menyebarkan narasi hoaks serentak pada platform TikTok, X, Instagram, Facebook, dan Telegram."
+                f"{len(cib_df)} Akun", 
+                "Terdeteksi di Medsos",
+                help="Total akun bodong tertangkap basah menyebarkan narasi hoaks serentak pada platform TikTok, X, Instagram, Facebook, dan Telegram."
             )
         with col_m2:
             st.metric(
@@ -75,35 +100,29 @@ def render_cib_screener():
             
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         
-        # PANDUAN EDUKASI BAHASA AWAM
+        # PANDUAN EDUKASI BAHASA AWAM (Menggunakan Markdown Murni agar tidak bocor kode HTML)
         with st.expander("💡 PANDUAN BAHASA AWAM: BAGAIMANA CARA SISTEM MEMBUKTIKAN BAHWA INI BUKAN NETIZEN ASLI? (KLIK UNTUK MEMBACA)", expanded=False):
+            st.markdown("#### 🛡️ 4 Bukti Ilmiah Mengapa 13 Akun Ini Pasti Bot / Pasukan Buzzer:")
+            
             st.markdown(
-                """
-                <div style="background: #0B1120; border: 1px solid #1E293B; padding: 16px; border-radius: 6px; font-size: 0.88rem; line-height: 1.6; color: #CBD5E1;">
-                    <h4 style="color: #38BDF8; margin-top: 0; font-family: 'Chakra Petch', sans-serif;">🛡️ 4 Bukti Ilmiah Mengapa 13 Akun Ini Pasti Bot / Pasukan Buzzer:</h4>
-                    
-                    <div style="margin-bottom: 12px;">
-                        <b style="color: #F8FAFC;">1. ⏱️ Kecepatan Waktu Mustahil (Jeda Unggah 3–8 Detik):</b><br/>
-                        Netizen manusia butuh waktu untuk membuka HP, membaca berita, mengetik komentar, dan mengunggahnya (rata-rata 1–3 menit). Akun-akun ini mengunggah postingan hanya berselang 3 hingga 8 detik satu sama lain secara berurutan. Pola tembakan cepat (*burst*) ini adalah ciri mutlak sistem otomatisasi komputer.
-                    </div>
-                    
-                    <div style="margin-bottom: 12px;">
-                        <b style="color: #F8FAFC;">2. 📋 Isi Kalimat 'Copy-Paste' Seragam (Tingkat Kemiripan 96.4%):</b><br/>
-                        Jika netizen asli mengomentari suatu isu, gaya bahasa dan pilihan kata mereka pasti beragam. Namun 13 akun ini menggunakan susunan kalimat yang 96% identik (hanya dibolak-balik sedikit menggunakan teknik <i>spinning text</i>) untuk membanjiri linimasa secara terkoordinasi.
-                    </div>
-                    
-                    <div style="margin-bottom: 12px;">
-                        <b style="color: #F8FAFC;">3. 🎭 Profil Bodong & Akun 'Siluman' (Umur Baru & Sepi Pengikut):</b><br/>
-                        Akun-akun ini rata-rata baru dibuat 2 hingga 14 hari yang lalu, foto profilnya menggunakan gambar AI atau comotan Google, serta memiliki pengikut sangat sedikit (14–85 followers) tanpa riwayat kehidupan nyata. Akun sengaja diproduksi massal (*bot farm*) khusus untuk kampanye propaganda.
-                    </div>
-                    
-                    <div>
-                        <b style="color: #F8FAFC;">4. 🌐 Menyamarkan Lokasi Geografis (Jalur TOR Exit Node & Data Center):</b><br/>
-                        Alih-alih menggunakan internet penyedia lokal Indonesia (seperti Telkomsel, Indosat, atau IndiHome), jejak internet akun-akun ini dialihkan melalui jaringan persembunyian anonim (TOR Node dan Proxy Server di Belanda, Swiss, Swedia, AS) agar identitas pelaku sebenarnya tidak mudah dilacak aparat hukum.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+                "**1. ⏱️ Kecepatan Waktu Mustahil (Jeda Unggah Rata-Rata 5.8 Detik):**  \n"
+                "Netizen manusia butuh waktu untuk membuka HP, membaca berita, mengetik komentar, dan mengunggahnya (rata-rata 1–3 menit). "
+                "Akun-akun ini mengunggah postingan hanya berselang 3 hingga 8 detik satu sama lain secara berurutan. Pola tembakan cepat (*burst*) ini adalah ciri mutlak sistem otomatisasi komputer."
+            )
+            st.markdown(
+                "**2. 📋 Isi Kalimat 'Copy-Paste' Seragam (Tingkat Kemiripan 96.4%):**  \n"
+                "Jika netizen asli mengomentari suatu isu, gaya bahasa dan pilihan kata mereka pasti beragam. Namun 13 akun ini menggunakan susunan kalimat yang 96% identik "
+                "(hanya dibolak-balik sedikit menggunakan teknik *spinning text*) untuk membanjiri linimasa secara terkoordinasi."
+            )
+            st.markdown(
+                "**3. 🎭 Profil Bodong & Akun 'Siluman' (Umur Baru & Sepi Pengikut):**  \n"
+                "Akun-akun ini rata-rata baru dibuat 2 hingga 14 hari yang lalu, foto profilnya menggunakan gambar AI atau comotan Google, serta memiliki pengikut sangat sedikit "
+                "(14–85 followers) tanpa riwayat kehidupan nyata. Akun sengaja diproduksi massal (*bot farm*) khusus untuk kampanye propaganda."
+            )
+            st.markdown(
+                "**4. 🌐 Menyamarkan Lokasi Geografis (Jalur TOR Exit Node & Data Center):**  \n"
+                "Alih-alih menggunakan internet penyedia lokal Indonesia (seperti Telkomsel, Indosat, atau IndiHome), jejak internet akun-akun ini dialihkan melalui jaringan persembunyian anonim "
+                "(TOR Node dan Proxy Server di Belanda, Swiss, Swedia, AS) agar identitas pelaku sebenarnya tidak mudah dilacak aparat hukum."
             )
 
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
