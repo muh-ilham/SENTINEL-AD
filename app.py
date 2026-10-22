@@ -27,6 +27,17 @@ def main():
     # 1. Inject Military Tactical Dark Theme CSS
     inject_tactical_theme()
     
+    # 1b. Initialize Global SOAR Persistent State
+    from utils.soar_storage import get_escalated_incidents, get_approved_incidents, get_rejected_incidents, get_audit_logs
+    if "approved_incidents" not in st.session_state:
+        st.session_state["approved_incidents"] = get_approved_incidents()
+    if "rejected_incidents" not in st.session_state:
+        st.session_state["rejected_incidents"] = get_rejected_incidents()
+    if "escalated_soar_incidents" not in st.session_state:
+        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+    if "audit_logs" not in st.session_state:
+        st.session_state["audit_logs"] = get_audit_logs()
+    
     # 2. Sidebar Navigation & Tactical Role Switcher
     with st.sidebar:
         st.markdown(

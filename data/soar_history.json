@@ -23,7 +23,8 @@
     }
   },
   "approved_incidents": [
-    "LIVE-261022-101"
+    "LIVE-261022-101",
+    "INC-2026-ALPHA"
   ],
   "audit_logs": [
     {

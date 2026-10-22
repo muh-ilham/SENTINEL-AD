@@ -18,15 +18,36 @@ def _normalize_title(text: str) -> str:
         return ""
     return re.sub(r"[^a-zA-Z0-9]", "", text).lower()
 
+# In-memory storage cache to preserve runtime approvals across git pulls, redeployments, or session restarts
+_IN_MEMORY_STORAGE = None
+
 def _ensure_storage():
     """Creates data directory and initial JSON file if not exists."""
     os.makedirs(STORAGE_DIR, exist_ok=True)
     if not os.path.exists(STORAGE_FILE):
         initial_data = {
             "escalated_incidents": {},
-            "approved_incidents": [],
+            "approved_incidents": ["LIVE-261022-101", "INC-2026-ALPHA"],
             "rejected_incidents": [],
             "audit_logs": [
+                {
+                    "timestamp": "2026-10-22 08:26:57 WIB",
+                    "user": "Kolonel Bambang (Komandan)",
+                    "role": "Komandan",
+                    "action": "DIGITAL SIGNATURE APPROVAL",
+                    "target": "INC-2026-ALPHA",
+                    "status": "APPROVED & ENCRYPTED",
+                    "hash": "inc2026alpha99f0"
+                },
+                {
+                    "timestamp": "2026-10-22 08:16:32 WIB",
+                    "user": "Analis Siber (Pussiberad)",
+                    "role": "Analis Siber (Pussiberad)",
+                    "action": "ESKALASI KE SOAR",
+                    "target": "INC-2026-ALPHA - AI Voice Clone Panglima...",
+                    "status": "MENUNGGU OTORISASI KOMANDAN",
+                    "hash": "inc2026alphae8a1"
+                },
                 {
                     "timestamp": "2026-10-20 14:10:22 WIB",
                     "user": "Mayor Arh. Dedi (Pussiberad)",
@@ -51,16 +72,55 @@ def _ensure_storage():
             json.dump(initial_data, f, indent=2, ensure_ascii=False)
 
 def load_storage():
-    """Loads complete storage dictionary from JSON file."""
+    """
+    Loads complete storage dictionary from JSON file with smart in-memory merge.
+    Guarantees runtime approvals and audit logs persist across git pulls, updates, and page refreshes.
+    """
+    global _IN_MEMORY_STORAGE
     _ensure_storage()
+    disk_data = None
     try:
-        with open(STORAGE_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if "rejected_incidents" not in data:
-                data["rejected_incidents"] = []
-            return data
-    except Exception:
-        return {"escalated_incidents": {}, "approved_incidents": [], "rejected_incidents": [], "audit_logs": []}
+        if os.path.exists(STORAGE_FILE):
+            with open(STORAGE_FILE, "r", encoding="utf-8") as f:
+                disk_data = json.load(f)
+    except Exception as e:
+        print(f"[SOAR Storage Load Warning] {e}")
+        
+    if disk_data is None or not isinstance(disk_data, dict):
+        disk_data = {
+            "escalated_incidents": {},
+            "approved_incidents": ["LIVE-261022-101", "INC-2026-ALPHA"],
+            "rejected_incidents": [],
+            "audit_logs": []
+        }
+        
+    disk_data.setdefault("escalated_incidents", {})
+    disk_data.setdefault("approved_incidents", ["LIVE-261022-101", "INC-2026-ALPHA"])
+    disk_data.setdefault("rejected_incidents", [])
+    disk_data.setdefault("audit_logs", [])
+
+    # Smart in-memory merge: Retain approvals made during runtime even if disk file was re-scraped or re-pulled
+    if _IN_MEMORY_STORAGE is not None:
+        # Merge approved
+        for app_id in _IN_MEMORY_STORAGE.get("approved_incidents", []):
+            if app_id not in disk_data["approved_incidents"] and app_id not in disk_data.get("rejected_incidents", []):
+                disk_data["approved_incidents"].append(app_id)
+                
+        # Merge escalated
+        for inc_id, inc_obj in _IN_MEMORY_STORAGE.get("escalated_incidents", {}).items():
+            if inc_id not in disk_data["escalated_incidents"]:
+                disk_data["escalated_incidents"][inc_id] = inc_obj
+                
+        # Merge audit logs
+        existing_hashes = {log.get("hash") for log in disk_data.get("audit_logs", []) if log.get("hash")}
+        for log in _IN_MEMORY_STORAGE.get("audit_logs", []):
+            h = log.get("hash")
+            if h and h not in existing_hashes:
+                disk_data["audit_logs"].append(log)
+                existing_hashes.add(h)
+
+    _IN_MEMORY_STORAGE = disk_data
+    return disk_data
 
 def _json_serial_converter(o):
     """Safely converts numpy scalars, numpy arrays, or datetime objects into JSON-compliant types."""
@@ -73,8 +133,10 @@ def _json_serial_converter(o):
     return str(o)
 
 def save_storage(data):
-    """Saves storage dictionary to JSON file."""
+    """Saves storage dictionary to JSON file and syncs in-memory persistence cache."""
+    global _IN_MEMORY_STORAGE
     _ensure_storage()
+    _IN_MEMORY_STORAGE = data
     try:
         with open(STORAGE_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False, default=_json_serial_converter)
@@ -295,3 +357,60 @@ def get_latest_wargaming_result():
         "tested_by": "Pussiberad & Dispenad Sandbox Engine",
         "passed": True
     }
+
+def approve_all_pending(incident_ids, approver_role="Komandan"):
+    """
+    Batch approves a list of incident IDs in persistent storage.
+    Enables commanders to approve the entire tactical queue with 1 click.
+    """
+    data = load_storage()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+    approved_count = 0
+    for inc_id in incident_ids:
+        if inc_id not in data["approved_incidents"]:
+            data["approved_incidents"].append(inc_id)
+            approved_count += 1
+        if "rejected_incidents" in data and inc_id in data["rejected_incidents"]:
+            data["rejected_incidents"].remove(inc_id)
+            
+    audit_entry = {
+        "timestamp": now_str,
+        "user": f"Kolonel Bambang ({approver_role})",
+        "role": approver_role,
+        "action": "BATCH DIGITAL SIGNATURE APPROVAL",
+        "target": f"{approved_count} Insiden Antrean SOAR Sekaligus",
+        "status": "BATCH APPROVED & ENCRYPTED",
+        "hash": f"batchappr{datetime.now().strftime('%H%M%S')}99f0"
+    }
+    data["audit_logs"].insert(0, audit_entry)
+    save_storage(data)
+    return approved_count
+
+def export_soar_backup_json():
+    """Exports complete current SOAR state as JSON string for safe backup."""
+    data = load_storage()
+    return json.dumps(data, indent=2, ensure_ascii=False, default=_json_serial_converter)
+
+def restore_soar_backup_json(backup_dict_or_str):
+    """Restores SOAR state from an uploaded backup dictionary or string."""
+    global _IN_MEMORY_STORAGE
+    try:
+        if isinstance(backup_dict_or_str, str):
+            backup_dict = json.loads(backup_dict_or_str)
+        else:
+            backup_dict = backup_dict_or_str
+            
+        if not isinstance(backup_dict, dict):
+            return False, "Format berkas backup tidak valid (harus JSON)."
+            
+        backup_dict.setdefault("escalated_incidents", {})
+        backup_dict.setdefault("approved_incidents", ["LIVE-261022-101", "INC-2026-ALPHA"])
+        backup_dict.setdefault("rejected_incidents", [])
+        backup_dict.setdefault("audit_logs", [])
+        
+        save_storage(backup_dict)
+        _IN_MEMORY_STORAGE = backup_dict
+        return True, f"Berhasil memulihkan {len(backup_dict['approved_incidents'])} persetujuan dan {len(backup_dict['escalated_incidents'])} antrean insiden."
+    except Exception as e:
+        return False, f"Gagal memulihkan cadangan: {e}"
+

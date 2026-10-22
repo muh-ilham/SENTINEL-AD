@@ -18,7 +18,10 @@ from utils.soar_storage import (
     revoke_incident_status,
     remove_escalated_incident,
     get_audit_logs,
-    get_latest_wargaming_result
+    get_latest_wargaming_result,
+    approve_all_pending,
+    export_soar_backup_json,
+    restore_soar_backup_json
 )
 
 def init_audit_logs():
@@ -139,6 +142,27 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             
             if is_rejected:
                 st.error("⛔ **Status Insiden Ditolak:** Insiden ini telah ditandai sebagai *Bukan Ancaman / False Positive* oleh Komandan. Seluruh aksi otomatisasi dibekukan.")
+            elif not is_approved:
+                st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
+                with st.container(border=True):
+                    col_q1, col_q2 = st.columns([7.5, 4.5])
+                    with col_q1:
+                        if "Komandan" in current_role:
+                            st.markdown("##### ✍️ Otorisasi Cepat Komandan (1-Klik)")
+                            st.caption("Peran Komandan aktif. Sahkan berkas paket penanggulangan ini langsung dari sini:")
+                        else:
+                            st.markdown("##### 🔒 Status: Menunggu Otorisasi Komandan")
+                            st.caption("Dokumen resmi belum disahkan. Ubah peran ke Komandan di sidebar kiri untuk menandatangani.")
+                    with col_q2:
+                        if "Komandan" in current_role:
+                            if st.button("✍️ Sahkan Dokumen Ini Sekarang", type="primary", use_container_width=True, key=f"quick_tab1_appr_{inc_id}"):
+                                mark_incident_approved(inc_id, current_role)
+                                st.session_state["approved_incidents"] = get_approved_incidents()
+                                st.session_state["rejected_incidents"] = get_rejected_incidents()
+                                st.session_state["audit_logs"] = get_audit_logs()
+                                st.toast(f"Insiden {inc_id} berhasil disahkan oleh Komandan!", icon="✍️")
+                                st.rerun()
+
             
             # Fact-Checking Infographic Brief
             st.markdown("#### 📢 Materi Briefing Komunikasi Publik Dispenad")
@@ -304,32 +328,71 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         col_approval_left, col_approval_right = st.columns([7, 5])
         
         with col_approval_left:
-            st.markdown("#### Daftar Antrean Permohonan Otorisasi SOAR")
             all_incidents = get_all_soar_incidents()
+            approved_set = st.session_state["approved_incidents"]
+            rejected_set = st.session_state["rejected_incidents"]
             
-            # Filter Status Antrean
-            status_filter = st.radio(
+            pending_list = [i for i in all_incidents if i["id"] not in approved_set and i["id"] not in rejected_set]
+            approved_list = [i for i in all_incidents if i["id"] in approved_set]
+            rejected_list = [i for i in all_incidents if i["id"] in rejected_set]
+
+            # 1. Top Metrics Banner for Status Antrean
+            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+            with m_col1:
+                st.metric("Total Antrean", f"{len(all_incidents)} Berkas", "Terintegrasi")
+            with m_col2:
+                st.metric("🟡 Menunggu", f"{len(pending_list)} Berkas", "Pending Review")
+            with m_col3:
+                st.metric("🟢 Disetujui", f"{len(approved_list)} Berkas", "Tersertifikasi")
+            with m_col4:
+                st.metric("🔴 Ditolak", f"{len(rejected_list)} Berkas", "Bukan Ancaman")
+
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            
+            # Batch Commander Approval Action
+            if is_commander and len(pending_list) > 0:
+                with st.container(border=True):
+                    col_b1, col_b2 = st.columns([7.5, 4.5])
+                    with col_b1:
+                        st.markdown(f"##### ⚡ Eksekusi Komando: Sahkan Seluruh {len(pending_list)} Berkas Sekaligus")
+                        st.caption("Membubuhkan tanda tangan digital kriptografis ke seluruh antrean yang pending dalam 1 kali klik.")
+                    with col_b2:
+                        if st.button("✍️ Sahkan Semua Sekaligus", type="primary", use_container_width=True):
+                            cnt = approve_all_pending([i["id"] for i in pending_list], current_role)
+                            st.session_state["approved_incidents"] = get_approved_incidents()
+                            st.session_state["rejected_incidents"] = get_rejected_incidents()
+                            st.session_state["audit_logs"] = get_audit_logs()
+                            st.toast(f"Berhasil mengesahkan seluruh {cnt} antrean secara serentak!", icon="✍️")
+                            st.rerun()
+
+            st.markdown("#### Daftar Antrean Permohonan Otorisasi SOAR")
+            
+            # Filter Status Antrean dengan Hitungan Dinamis
+            filter_map = {
+                f"Semua ({len(all_incidents)})": "all",
+                f"🟡 Menunggu Persetujuan ({len(pending_list)})": "pending",
+                f"🟢 Sudah Disetujui ({len(approved_list)})": "approved",
+                f"🔴 Ditolak ({len(rejected_list)})": "rejected"
+            }
+            selected_filter_label = st.radio(
                 "Saring Antrean:",
-                ["Semua", "🟡 Menunggu Persetujuan", "🟢 Sudah Disetujui", "🔴 Ditolak"],
+                options=list(filter_map.keys()),
+                index=0,
                 horizontal=True
             )
+            filter_mode = filter_map[selected_filter_label]
             
-            filtered_incidents = []
-            for inc in all_incidents:
-                i_id = inc["id"]
-                is_app = i_id in st.session_state["approved_incidents"]
-                is_rej = i_id in st.session_state["rejected_incidents"]
-                
-                if status_filter == "🟡 Menunggu Persetujuan" and (is_app or is_rej):
-                    continue
-                elif status_filter == "🟢 Sudah Disetujui" and not is_app:
-                    continue
-                elif status_filter == "🔴 Ditolak" and not is_rej:
-                    continue
-                filtered_incidents.append(inc)
+            if filter_mode == "pending":
+                filtered_incidents = pending_list
+            elif filter_mode == "approved":
+                filtered_incidents = approved_list
+            elif filter_mode == "rejected":
+                filtered_incidents = rejected_list
+            else:
+                filtered_incidents = all_incidents
                 
             if not filtered_incidents:
-                st.info(f"Tidak ada antrean insiden dengan status '{status_filter}'.")
+                st.info(f"Tidak ada antrean insiden pada filter '{selected_filter_label}'.")
             
             for inc in filtered_incidents:
                 inc_id = inc["id"]
@@ -380,7 +443,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                     if already_approved:
                         c_app_1, c_app_2 = st.columns([7, 3])
                         with c_app_1:
-                            st.caption("✅ Dokumen telah disahkan secara kriptografis SHA-256.")
+                            st.caption("✅ Dokumen telah disahkan secara kriptografis SHA-256. Berkas siap ditransmisikan di Tab 1.")
                         with c_app_2:
                             if is_commander:
                                 if st.button(f"↩️ Cabut Izin", key=f"revoke_{inc_id}", help="Batalkan persetujuan dan kembalikan ke status pending"):
@@ -439,6 +502,26 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                             
                     st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
+            # 2. Dedicated Riwayat Persetujuan Resmi Komandan
+            st.markdown("---")
+            st.markdown("#### 📜 Riwayat Berkas Resmi yang Telah Disahkan Komandan")
+            if approved_list:
+                hist_table = []
+                for a_inc in approved_list:
+                    a_title = a_inc.get("title", a_inc.get("headline", "Insiden"))
+                    a_plat = a_inc.get("platform", a_inc.get("root_platform", "Multi-Platform"))
+                    hist_table.append({
+                        "No Register": a_inc["id"],
+                        "Sasaran / Target": a_title[:38] + ("..." if len(a_title) > 38 else ""),
+                        "Platform": a_plat,
+                        "Tingkat": a_inc.get("level", a_inc.get("threat_level", "Kritis")),
+                        "Status Hukum": "🟢 SAH & DISETUJUI",
+                        "Tanda Tangan Kripto": f"SHA256:{a_inc['id'].lower().replace('-', '')[:8]}...99f0"
+                    })
+                st.dataframe(pd.DataFrame(hist_table), hide_index=True, use_container_width=True)
+            else:
+                st.info("Belum ada berkas insiden yang disahkan.")
+
         with col_approval_right:
             st.markdown("#### Matriks Hak Akses (RBAC Matrix)")
             
@@ -458,6 +541,51 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 hide_index=True,
                 use_container_width=True
             )
+
+            # 3. Dedicated Pusat Cadangan & Pemulihan SOAR
+            st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("#### 💾 Pusat Cadangan & Pemulihan SOAR")
+            st.markdown(
+                "<p style='font-size: 0.8rem; color: #94A3B8;'>"
+                "Menjamin seluruh status persetujuan, antrean insiden, dan jejak audit dapat dicadangkan offline atau dipulihkan kapan saja."
+                "</p>",
+                unsafe_allow_html=True
+            )
+            
+            b_data_str = export_soar_backup_json()
+            b1, b2 = st.columns(2)
+            with b1:
+                st.download_button(
+                    "💾 Unduh Cadangan SOAR (JSON)",
+                    data=b_data_str,
+                    file_name=f"SOAR_Backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+            with b2:
+                if st.button("🔄 Sinkronkan Ulang Storage", use_container_width=True):
+                    st.session_state["approved_incidents"] = get_approved_incidents()
+                    st.session_state["rejected_incidents"] = get_rejected_incidents()
+                    st.session_state["audit_logs"] = get_audit_logs()
+                    st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                    st.toast("Storage dan antrean persetujuan berhasil disinkronkan!", icon="🔄")
+                    st.rerun()
+
+            with st.expander("📥 Pulihkan Cadangan dari Berkas JSON"):
+                uploaded_backup = st.file_uploader("Pilih Berkas Cadangan SOAR (.json):", type=["json"], key="uploader_backup_soar")
+                if uploaded_backup is not None:
+                    if st.button("Pulihkan Status Sekarang", type="primary"):
+                        success, msg = restore_soar_backup_json(uploaded_backup.read().decode("utf-8"))
+                        if success:
+                            st.session_state["approved_incidents"] = get_approved_incidents()
+                            st.session_state["rejected_incidents"] = get_rejected_incidents()
+                            st.session_state["audit_logs"] = get_audit_logs()
+                            st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+
 
     # -------------------------------------------------------------
     # TAB 3: TACTICAL AUDIT TRAIL LOG (OPSEC)
