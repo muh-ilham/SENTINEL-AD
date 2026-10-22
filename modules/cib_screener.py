@@ -312,23 +312,27 @@ def render_cib_screener():
                 )
                 
                 # Cek apakah akun spesifik ini sudah pernah dimasukkan ke antrean SOAR
-                account_inc_id = f"TKD-BOT-{abs(hash(str(active_user_data['account']))) % 100000}"
+                clean_acc_slug = re.sub(r"[^a-zA-Z0-9]", "", str(active_user_data["account"])).upper()
+                account_inc_id = f"TKD-BOT-{clean_acc_slug[:16]}"
                 acc_alert = {
                     "id": account_inc_id,
-                    "headline": f"Takedown Akun Bot {active_user_data['account']} ({active_user_data['platform']})"
+                    "headline": f"Takedown Akun Bot {active_user_data['account']} ({active_user_data['platform']})",
+                    "bot_account": str(active_user_data["account"])
                 }
                 is_esc, esc_info = check_is_escalated(acc_alert)
                 
                 if is_esc:
                     esc_time = esc_info.get("escalated_at", "Tercatat di Sistem")
-                    esc_by = esc_info.get("escalated_by", "Analis")
-                    st.button("✅ TELAH MASUK ANTREAN TAKEDOWN SOAR", key=f"btn_tkd_{account_inc_id}_done", disabled=True, use_container_width=True)
+                    esc_by = esc_info.get("escalated_by", "Analis Siber (Pussiberad)")
+                    esc_id_display = esc_info.get("id", account_inc_id)
+                    st.button("✅ AKUN SUDAH DIANTREKAN KE SOAR", key=f"btn_tkd_{esc_id_display}_done", disabled=True, use_container_width=True)
                     st.markdown(
-                        f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 4px; margin-top: 4px;">
-                        ✓ <b>STATUS:</b> MASUK ANTREAN SOAR<br/>
-                        ⏱ <b>Waktu:</b> {esc_time}<br/>
-                        👤 <b>Oleh:</b> {esc_by}<br/>
-                        👉 <i>Buka Modul 'Tactical SOAR & Otorisasi' untuk pengesahan Komandan</i>
+                        f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: #10B981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px 12px; border-radius: 4px; margin-top: 6px; line-height: 1.5;">
+                        <div style="font-weight: bold; color: #34D399; margin-bottom: 2px;">✓ STATUS: TERDAFTAR DI ANTREAN SOAR</div>
+                        <div>🏷️ <b>Nomor Tiket:</b> <span style="color: #38BDF8;">{esc_id_display}</span></div>
+                        <div>⏱️ <b>Waktu Transmisi:</b> {esc_time}</div>
+                        <div>👤 <b>Operator Pengaju:</b> {esc_by}</div>
+                        <div style="margin-top: 4px; color: #F59E0B;">👉 <i>Buka Modul <b>'Tactical SOAR & Otorisasi'</b> di menu navigasi kiri untuk pengesahan Komandan (RBAC).</i></div>
                         </div>""",
                         unsafe_allow_html=True
                     )
@@ -336,35 +340,37 @@ def render_cib_screener():
                     if st.button(f"🚨 Masukkan Akun Ini ke Antrean Takedown SOAR", key=f"btn_tkd_{account_inc_id}", type="primary", use_container_width=True):
                         now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
                         role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+                        followers_val = int(active_user_data.get("followers", 45)) if pd.notna(active_user_data.get("followers")) else 45
+                        sim_val = float(active_user_data.get("semantic_similarity", 0.95)) if pd.notna(active_user_data.get("semantic_similarity")) else 0.95
                         soar_record = {
                             "id": account_inc_id,
                             "title": f"Permohonan Takedown Akun Bot: {active_user_data['account']} ({active_user_data['platform']})",
                             "headline": f"Takedown Akun Bot {active_user_data['account']} ({active_user_data['platform']})",
                             "sample_text": f"Akun bot {active_user_data['account']} pada platform {active_user_data['platform']} menyebarkan narasi hoaks: '{active_user_data['payload_text']}'. Bukti URL: {active_user_data['profile_url']}.",
                             "text": f"Akun bot {active_user_data['account']} pada platform {active_user_data['platform']} menyebarkan narasi hoaks: '{active_user_data['payload_text']}'. Bukti URL: {active_user_data['profile_url']}.",
-                            "platform": active_user_data["platform"],
-                            "root_platform": active_user_data["platform"],
+                            "platform": str(active_user_data["platform"]),
+                            "root_platform": str(active_user_data["platform"]),
                             "level": "Kritis",
                             "threat_level": "Kritis",
                             "target_kodam": "Mabes TNI AD / Kominfo BSSN",
                             "kodam": "Mabes TNI AD / Kominfo BSSN",
-                            "cib_cluster_size": len(sub_cib),
-                            "amplification_nodes": active_user_data.get("followers", 45),
+                            "cib_cluster_size": 1,
+                            "amplification_nodes": followers_val,
                             "virality_score": 92,
-                            "cib_probability": int(active_user_data.get("semantic_similarity", 0.95) * 100),
-                            "shares_count": active_user_data.get("followers", 45),
+                            "cib_probability": int(sim_val * 100),
+                            "shares_count": followers_val,
                             "escalated_at": now_wib,
                             "escalated_by": role_actor,
                             "is_from_radar": True,
                             "is_from_cib": True,
-                            "bot_account": active_user_data["account"],
-                            "bot_url": active_user_data["profile_url"]
+                            "bot_account": str(active_user_data["account"]),
+                            "bot_url": str(active_user_data["profile_url"])
                         }
                         add_escalated_incident(soar_record)
                         st.session_state["approved_incidents"] = get_approved_incidents()
                         st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
                         st.session_state["audit_logs"] = get_audit_logs()
-                        st.toast(f"Akun {active_user_data['account']} berhasil didaftarkan ke antrean Takedown SOAR!", icon="🚨")
+                        st.toast(f"Akun {active_user_data['account']} ({account_inc_id}) berhasil didaftarkan ke antrean Takedown SOAR!", icon="🚨")
                         st.rerun()
 
         # Operasi Takedown Kolektif (Batch Escalation)

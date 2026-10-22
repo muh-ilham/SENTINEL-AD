@@ -27,6 +27,24 @@
   ],
   "audit_logs": [
     {
+      "timestamp": "2026-10-22 12:04:40 WIB",
+      "user": "Petugas (Analis)",
+      "role": "Analis",
+      "action": "PEMBATALAN ESKALASI SOAR",
+      "target": "TKD-BOT-XXTWITTER (Permohonan Takedown Akun Bot: ...)",
+      "status": "DIHAPUS DARI ANTREAN",
+      "hash": "tkdbotxxtwitterd3e1"
+    },
+    {
+      "timestamp": "2026-10-22 12:00:00 WIB",
+      "user": "Analis Siber (Pussiberad)",
+      "role": "Analis Siber (Pussiberad)",
+      "action": "ESKALASI KE SOAR",
+      "target": "TKD-BOT-XXTWITTER - Takedown Akun Bot @xxtwitter (X (Tw...",
+      "status": "MENUNGGU OTORISASI KOMANDAN",
+      "hash": "tkdbotxxtwittere8a1"
+    },
+    {
       "timestamp": "2026-10-22 08:26:57 WIB",
       "user": "Kolonel Bambang (Komandan)",
       "role": "Komandan",
@@ -62,5 +80,6 @@
       "status": "TERVERIFIKASI DISPENAD",
       "hash": "3d1b8e62...45a1"
     }
-  ]
+  ],
+  "rejected_incidents": []
 }

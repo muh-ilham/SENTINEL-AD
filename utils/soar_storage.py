@@ -62,14 +62,24 @@ def load_storage():
     except Exception:
         return {"escalated_incidents": {}, "approved_incidents": [], "rejected_incidents": [], "audit_logs": []}
 
+def _json_serial_converter(o):
+    """Safely converts numpy scalars, numpy arrays, or datetime objects into JSON-compliant types."""
+    if hasattr(o, "item"):
+        return o.item()
+    if hasattr(o, "tolist"):
+        return o.tolist()
+    if isinstance(o, (datetime, )):
+        return o.isoformat()
+    return str(o)
+
 def save_storage(data):
     """Saves storage dictionary to JSON file."""
     _ensure_storage()
     try:
         with open(STORAGE_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-    except Exception:
-        pass
+            json.dump(data, f, indent=2, ensure_ascii=False, default=_json_serial_converter)
+    except Exception as e:
+        print(f"[SOAR Storage Error] Failed to write storage: {e}")
 
 def get_escalated_incidents():
     """Returns dictionary of all escalated incidents (persisted)."""
@@ -78,7 +88,7 @@ def get_escalated_incidents():
 
 def check_is_escalated(alert):
     """
-    Checks if an alert is already escalated by ID or by normalized headline.
+    Checks if an alert is already escalated by ID or by normalized headline or by bot_account.
     Returns (True, record) or (False, None).
     """
     escalations = get_escalated_incidents()
@@ -90,7 +100,16 @@ def check_is_escalated(alert):
     if alert_id and alert_id in escalations:
         return True, escalations[alert_id]
         
-    # 2. Match by normalized headline
+    # 2. Match by bot_account if provided
+    bot_acc = alert.get("bot_account")
+    if bot_acc:
+        norm_bot = re.sub(r"[^a-zA-Z0-9]", "", str(bot_acc)).lower()
+        for item in escalations.values():
+            item_bot = item.get("bot_account")
+            if item_bot and re.sub(r"[^a-zA-Z0-9]", "", str(item_bot)).lower() == norm_bot:
+                return True, item
+
+    # 3. Match by normalized headline
     if norm_headline:
         for item in escalations.values():
             item_title = item.get("headline", item.get("title", ""))

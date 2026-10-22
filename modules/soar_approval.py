@@ -22,17 +22,11 @@ from utils.soar_storage import (
 
 def init_audit_logs():
     """Initializes session state audit trail and approvals from persistent storage."""
-    if "audit_logs" not in st.session_state:
-        st.session_state["audit_logs"] = get_audit_logs()
-        
-    if "approved_incidents" not in st.session_state:
-        st.session_state["approved_incidents"] = get_approved_incidents()
-        
-    if "rejected_incidents" not in st.session_state:
-        st.session_state["rejected_incidents"] = get_rejected_incidents()
-        
-    if "escalated_soar_incidents" not in st.session_state:
-        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+    # Ensure fresh sync on every view render
+    st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+    st.session_state["approved_incidents"] = get_approved_incidents()
+    st.session_state["rejected_incidents"] = get_rejected_incidents()
+    st.session_state["audit_logs"] = get_audit_logs()
 
 def get_all_soar_incidents():
     """Returns combined list of dynamically escalated incidents from C2 Radar + baseline incidents."""
@@ -75,8 +69,15 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         all_incidents = get_all_soar_incidents()
         inc_options = {}
         for inc in all_incidents:
-            radar_prefix = "📡 [LIVE C2] " if inc.get("is_from_radar") else ""
-            inc_options[inc["id"]] = f"{radar_prefix}[{inc.get('level', inc.get('threat_level', 'KRITIS')).upper()}] {inc['title']}"
+            if inc.get("bot_accounts_list"):
+                prefix = "⚡ [TAKEDOWN MASSAL CIB] "
+            elif inc.get("is_from_cib") or "TKD-BOT" in inc.get("id", ""):
+                prefix = "🤖 [TAKEDOWN AKUN CIB] "
+            elif inc.get("is_from_radar"):
+                prefix = "📡 [LIVE C2] "
+            else:
+                prefix = "🚨 [BASELINE] "
+            inc_options[inc["id"]] = f"{prefix}[{inc.get('level', inc.get('threat_level', 'KRITIS')).upper()}] {inc['title']}"
             
         selected_inc_id = st.selectbox(
             "Pilih Insiden Ancaman untuk Dibuatkan Paket Penanggulangan:",
@@ -106,8 +107,19 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 status_color = "#F59E0B"
                 
             target_kodam_val = active_inc.get('target_kodam', active_inc.get('kodam', 'TNI AD'))
-            cib_cluster_val = active_inc.get('cib_cluster_size', active_inc.get('amplification_nodes', 28))
-            evidence_val = "Neural Vocoder 16kHz Cutoff / MD5 e99a18c4..." if not active_inc.get('is_from_radar') else f"Tautan Langsung {active_inc.get('platform', 'Medsos')} / Log Telemetri C2 SHA-256"
+            if active_inc.get("bot_account"):
+                cib_cluster_val = f"1 Akun Sasaran Tunggal ({active_inc.get('bot_account')})"
+            elif active_inc.get("bot_accounts_list"):
+                cib_cluster_val = f"{len(active_inc.get('bot_accounts_list'))} Akun Bot Terverifikasi (Kolektif)"
+            else:
+                cib_cluster_val = f"{active_inc.get('cib_cluster_size', active_inc.get('amplification_nodes', 28))} Akun Bot Terverifikasi"
+
+            if active_inc.get("bot_url"):
+                evidence_val = f"URL Sasaran: {active_inc.get('bot_url')} / Telemetri Forensik CIB"
+            elif active_inc.get("is_from_radar"):
+                evidence_val = f"Tautan Langsung {active_inc.get('platform', 'Medsos')} / Log Telemetri C2 SHA-256"
+            else:
+                evidence_val = "Neural Vocoder 16kHz Cutoff / MD5 e99a18c4..."
             
             card_html = f"""<div class="tactical-card" style="border-left: 3px solid {status_color}; padding: 16px; margin-bottom: 15px;">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -118,7 +130,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
 <p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 10px; line-height: 1.4;">{inc_desc}</p>
 <div style="background: #0B1120; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #94A3B8;">
 <div style="margin-bottom: 3px;">• Yurisdiksi: <b style="color: #F8FAFC;">{target_kodam_val}</b></div>
-<div style="margin-bottom: 3px;">• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{cib_cluster_val} Akun Bot Terverifikasi</b></div>
+<div style="margin-bottom: 3px;">• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{cib_cluster_val}</b></div>
 <div>• Bukti Sintetis / Telemetri: <b style="color: #22D3EE;">{evidence_val}</b></div>
 </div>
 </div>"""
@@ -291,7 +303,15 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 is_from_radar = inc.get("is_from_radar", False)
                 
                 with st.container():
-                    radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 4px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>" if is_from_radar else ""
+                    if inc.get("bot_accounts_list"):
+                        radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #F59E0B; margin-bottom: 4px;'>⚡ TAKEDOWN KOLEKTIF MASSAL ({len(inc.get('bot_accounts_list', []))} AKUN) • {inc.get('escalated_at', 'Baru saja')}</div>"
+                    elif inc.get("is_from_cib") or "TKD-BOT" in inc_id:
+                        bot_name = inc.get("bot_account", inc.get("title", ""))
+                        radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #38BDF8; margin-bottom: 4px;'>🤖 PERMOHONAN TAKEDOWN AKUN BOT: <b>{bot_name}</b> ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>"
+                    elif is_from_radar:
+                        radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 4px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>"
+                    else:
+                        radar_tag_html = ""
                     
                     if already_approved:
                         approval_status_text = "[STATUS: DISETUJUI KOMANDAN]"

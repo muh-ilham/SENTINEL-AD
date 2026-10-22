@@ -228,11 +228,19 @@ def export_takedown_dossier_json(incident_dict, target_nodes=None):
             "sample_content_snippet": incident_dict.get("text", ""),
             "deepfake_synthesis_confidence": "94.2% Synthesized (Voice Clone KSAD detected)",
             "evidence_md5_hash": "e99a18c428cb38d5f260853678922e03",
-            "detected_botnet_nodes": target_nodes or [
-                {"account": "@warga_waspada_01", "platform": "X", "action": "Takedown & IP Trace"},
-                {"account": "@nkri_bergerak_99", "platform": "X", "action": "Takedown & IP Trace"},
-                {"channel": "Kanal Info Hankam Terbuka", "platform": "Telegram", "action": "Takedown Channel"}
-            ]
+            "detected_botnet_nodes": target_nodes or (
+                [{"account": incident_dict.get("bot_account"), "platform": incident_dict.get("platform", "Medsos"), "action": "Takedown Akun & URL", "profile_url": incident_dict.get("bot_url", "")}]
+                if incident_dict.get("bot_account")
+                else (
+                    [{"account": acc, "platform": "Multi-Platform", "action": "Takedown Akun Botnet"} for acc in incident_dict.get("bot_accounts_list", [])]
+                    if incident_dict.get("bot_accounts_list")
+                    else [
+                        {"account": "@warga_waspada_01", "platform": "X", "action": "Takedown & IP Trace"},
+                        {"account": "@nkri_bergerak_99", "platform": "X", "action": "Takedown & IP Trace"},
+                        {"channel": "Kanal Info Hankam Terbuka", "platform": "Telegram", "action": "Takedown Channel"}
+                    ]
+                )
+            )
         },
         "required_actions": [
             "Pemblokiran akses DNS domain mirror",
@@ -240,4 +248,4 @@ def export_takedown_dossier_json(incident_dict, target_nodes=None):
             "Penyampaian data log IP ke Pussiberad & Dittipidsiber Bareskrim"
         ]
     }
-    return json.dumps(dossier, indent=2, ensure_ascii=False)
+    return json.dumps(dossier, indent=2, ensure_ascii=False, default=str)
