@@ -223,53 +223,238 @@ def generate_kodam_geo_summary():
 def generate_cib_synchronized_clusters():
     """
     Generates CIB synchronized posting burst events (<60 seconds latency)
-    between bot accounts with semantic similarity metrics.
+    between bot accounts with platform origins, clickable links, and forensic metadata.
+    Total: 13 detected bot accounts (8 in Cluster Alpha, 5 in Cluster Bravo).
     """
     base_t = datetime.now() - timedelta(minutes=45)
     
-    cluster_a = []
-    # Burst 1: Voice Clone audio drop
-    usernames_a = [
-        "@warga_waspada_01", "@nkri_bergerak_99", "@kabar_papua_rill", 
-        "@patriot_digital_id", "@suara_kritis_timur", "@fakta_indonesia_now",
-        "@cyber_nusantara_x", "@mata_perbatasan_ad"
+    meta_a = [
+        {
+            "account": "@warga_waspada_01",
+            "platform": "X (Twitter)",
+            "platform_icon": "🐦 X (Twitter)",
+            "profile_url": "https://x.com/warga_waspada_01",
+            "bot_role": "🚨 Seed (Pelepas Isu Utama)",
+            "bot_desc": "Akun pertama yang melepaskan rekaman audio hoaks ke ruang publik.",
+            "account_age_days": 3,
+            "followers": 18,
+            "automation_tool": "Python Requests Script / API Bot",
+            "proxy_location": "194.26.219.2 [TOR Exit Node - Belanda]",
+            "payload_text": "Beredar suara Panglima instruksikan siaga 1 konflik perbatasan! Bukti audio valid!"
+        },
+        {
+            "account": "@nkri_bergerak_99",
+            "platform": "TikTok",
+            "platform_icon": "📱 TikTok",
+            "profile_url": "https://www.tiktok.com/@nkri_bergerak_99",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Akun pengganda yang mengunggah audio dengan template sound FYP.",
+            "account_age_days": 5,
+            "followers": 42,
+            "automation_tool": "Selenium Headless Automation",
+            "proxy_location": "194.26.98.181 [TOR Exit Node - Jerman]",
+            "payload_text": "Rekaman suara Panglima TNI bocor! Perbatasan siaga 1 darurat perang! Jangan ditutupi!"
+        },
+        {
+            "account": "@kabar_papua_rill",
+            "platform": "Instagram",
+            "platform_icon": "📸 Instagram",
+            "profile_url": "https://www.instagram.com/kabar_papua_rill",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Mengunggah reels instan menggunakan potongan audio deepfake berulang.",
+            "account_age_days": 2,
+            "followers": 14,
+            "automation_tool": "Auto-Post Bot Engine v3",
+            "proxy_location": "194.26.18.75 [TOR Exit Node - Swiss]",
+            "payload_text": "VIRAL: Audio perintah Panglima perang perbatasan pecah! Dengar sendiri rekaman aslinya!"
+        },
+        {
+            "account": "@patriot_digital_id",
+            "platform": "Facebook",
+            "platform_icon": "👥 Facebook",
+            "profile_url": "https://www.facebook.com/patriot_digital_id",
+            "bot_role": "👥 Sockpuppet (Akun Boneka)",
+            "bot_desc": "Menyebarkan narasi provokatif ke grup-grup komunitas lokal.",
+            "account_age_days": 7,
+            "followers": 35,
+            "automation_tool": "Multi-Account Cookie Farm",
+            "proxy_location": "194.26.105.230 [TOR Exit Node - Swedia]",
+            "payload_text": "Masyarakat harus tahu instruksi suara Panglima ini! Situasi perbatasan genting!"
+        },
+        {
+            "account": "@suara_kritis_timur",
+            "platform": "X (Twitter)",
+            "platform_icon": "🐦 X (Twitter)",
+            "profile_url": "https://x.com/suara_kritis_timur",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Mem-blast cuitan dengan tagar trending militer dalam hitungan detik.",
+            "account_age_days": 4,
+            "followers": 29,
+            "automation_tool": "Python Tweepy Bot Engine",
+            "proxy_location": "194.26.30.176 [TOR Exit Node - Prancis]",
+            "payload_text": "Beredar audio suara Panglima siaga 1 konflik perbatasan! Jangan abaikan sinyal bahaya ini!"
+        },
+        {
+            "account": "@fakta_indonesia_now",
+            "platform": "TikTok",
+            "platform_icon": "📱 TikTok",
+            "profile_url": "https://www.tiktok.com/@fakta_indonesia_now",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Mengunggah video slide gambar dramatis dengan latar audio AI synthesizer.",
+            "account_age_days": 8,
+            "followers": 65,
+            "automation_tool": "Auto-Post Puppeteer Bot",
+            "proxy_location": "194.26.55.139 [TOR Exit Node - Finlandia]",
+            "payload_text": "Bocoran rekaman Panglima siaga perbatasan! Suaranya mirip 100% dengar baik-baik faktanya!"
+        },
+        {
+            "account": "@cyber_nusantara_x",
+            "platform": "X (Twitter)",
+            "platform_icon": "🐦 X (Twitter)",
+            "profile_url": "https://x.com/cyber_nusantara_x",
+            "bot_role": "📢 Resonator (Pemicu Trending)",
+            "bot_desc": "Menandai akun media nasional & tokoh politik untuk memancing reaksi.",
+            "account_age_days": 6,
+            "followers": 51,
+            "automation_tool": "Selenium Headless Script",
+            "proxy_location": "194.26.203.7 [TOR Exit Node - Belanda]",
+            "payload_text": "Audio rekaman instruksi Panglima siaga perbatasan sah dan valid! Bukti ada di sini!"
+        },
+        {
+            "account": "@mata_perbatasan_ad",
+            "platform": "Telegram / Medsos",
+            "platform_icon": "✈️ Telegram",
+            "profile_url": "https://t.me/mata_perbatasan_ad",
+            "bot_role": "👥 Sockpuppet (Akun Boneka)",
+            "bot_desc": "Membagikan tautan kanal ke lintas grup obrolan perbatasan.",
+            "account_age_days": 3,
+            "followers": 21,
+            "automation_tool": "Telegram Broadcast Bot API",
+            "proxy_location": "194.26.146.99 [TOR Exit Node - Jerman]",
+            "payload_text": "Siaga 1 perbatasan instruksi Panglima resmi bocor! Beredar masif di grup-grup daring!"
+        }
     ]
-    for i, user in enumerate(usernames_a):
-        post_time = base_t + timedelta(seconds=i * random.randint(4, 9))  # Burst within 50s
-        cluster_a.append({
-            "account": user,
+
+    cluster_a = []
+    for i, meta in enumerate(meta_a):
+        post_time = base_t + timedelta(seconds=i * random.randint(4, 9))
+        item = {
+            "account": meta["account"],
+            "platform": meta["platform"],
+            "platform_icon": meta["platform_icon"],
+            "profile_url": meta["profile_url"],
+            "bot_role": meta["bot_role"],
+            "bot_desc": meta["bot_desc"],
             "timestamp": post_time.strftime("%H:%M:%S.%f")[:-3],
             "post_interval_sec": random.randint(3, 8),
-            "payload_text": "Beredar suara Panglima instruksikan siaga 1 konflik perbatasan! Bukti audio valid!",
+            "payload_text": meta["payload_text"],
             "hash_md5": "e99a18c428cb38d5f260853678922e03",
             "semantic_similarity": round(random.uniform(0.93, 0.99), 3),
-            "account_age_days": random.randint(2, 14),
-            "followers": random.randint(15, 80),
-            "cluster": "Cluster Alpha-CIB (Audio Clone Drop)",
-            "proxy_ip": f"194.26.{random.randint(10,250)}.{random.randint(2,250)} [TOR Exit Node]"
-        })
+            "account_age_days": meta["account_age_days"],
+            "account_age_desc": f"{meta['account_age_days']} Hari (Sangat Baru)",
+            "followers": meta["followers"],
+            "follower_desc": f"{meta['followers']} Pengikut (Anomali Sepi)",
+            "automation_tool": meta["automation_tool"],
+            "proxy_ip": meta["proxy_location"],
+            "bot_probability": "98.5%",
+            "cluster": "Cluster Alpha-CIB (Audio Clone Drop - 8 Akun)"
+        }
+        cluster_a.append(item)
         
-    # Burst 2: Forged Dispenad letter
+    meta_b = [
+        {
+            "account": "@dokumen_bocor_id",
+            "platform": "X (Twitter)",
+            "platform_icon": "🐦 X (Twitter)",
+            "profile_url": "https://x.com/dokumen_bocor_id",
+            "bot_role": "🚨 Seed (Pelepas Isu Utama)",
+            "bot_desc": "Akun pertama yang melepaskan foto surat palsu berkop Dispenad.",
+            "account_age_days": 12,
+            "followers": 85,
+            "automation_tool": "Python Requests Script",
+            "proxy_location": "185.220.101.42 [Data Center Proxy - AS]",
+            "payload_text": "Surat edaran mutasi pejabat Dispenad resmi bocor. Ada pergeseran besar di Mabesad!"
+        },
+        {
+            "account": "@rahasia_mabes_01",
+            "platform": "TikTok",
+            "platform_icon": "📱 TikTok",
+            "profile_url": "https://www.tiktok.com/@rahasia_mabes_01",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Mengunggah tangkapan layar dokumen bertuliskan 'RAHASIA' untuk clickbait.",
+            "account_age_days": 9,
+            "followers": 64,
+            "automation_tool": "Auto-Post Video Bot",
+            "proxy_location": "185.220.145.88 [Data Center Proxy - Jerman]",
+            "payload_text": "Dokumen mutasi pejabat Dispenad beredar! Tanda tangan dan stempel jelas resmi!"
+        },
+        {
+            "account": "@opini_publik_jaya",
+            "platform": "Facebook",
+            "platform_icon": "👥 Facebook",
+            "profile_url": "https://www.facebook.com/opini_publik_jaya",
+            "bot_role": "👥 Sockpuppet (Akun Boneka)",
+            "bot_desc": "Membagikan postingan ke grup komunitas alumni militer dan purnawirawan.",
+            "account_age_days": 14,
+            "followers": 39,
+            "automation_tool": "Cloud Script Node.js",
+            "proxy_location": "185.220.160.12 [Data Center Proxy - Singapura]",
+            "payload_text": "Bocoran surat resmi Mabesad terkait mutasi pejabat Dispenad. Siapa dalang sebenarnya?"
+        },
+        {
+            "account": "@tribun_rakyat_24",
+            "platform": "Instagram",
+            "platform_icon": "📸 Instagram",
+            "profile_url": "https://www.instagram.com/tribun_rakyat_24",
+            "bot_role": "⚡ Amplifier (Pengganda Kilat)",
+            "bot_desc": "Mengunggah infografis manipulatif seolah-olah kutipan berita media kredibel.",
+            "account_age_days": 7,
+            "followers": 45,
+            "automation_tool": "Selenium Headless",
+            "proxy_location": "185.220.180.95 [Data Center Proxy - Belanda]",
+            "payload_text": "Heboh mutasi kilat pejabat Dispenad lewat surat edaran rahasia yang tersebar!"
+        },
+        {
+            "account": "@update_militer_ri",
+            "platform": "X (Twitter)",
+            "platform_icon": "🐦 X (Twitter)",
+            "profile_url": "https://x.com/update_militer_ri",
+            "bot_role": "📢 Resonator (Pemicu Trending)",
+            "bot_desc": "Menggunakan akun menyerupai akun berita militer untuk mengelabui pembaca.",
+            "account_age_days": 11,
+            "followers": 102,
+            "automation_tool": "Python Tweepy Script",
+            "proxy_location": "185.220.199.14 [Data Center Proxy - Inggris]",
+            "payload_text": "Surat mutasi Dispenad bocor ke publik! Apakah ini fakta atau manuver internal Mabesad?"
+        }
+    ]
+
     cluster_b = []
     base_t2 = datetime.now() - timedelta(minutes=110)
-    usernames_b = [
-        "@dokumen_bocor_id", "@rahasia_mabes_01", "@opini_publik_jaya", 
-        "@tribun_rakyat_24", "@update_militer_ri"
-    ]
-    for i, user in enumerate(usernames_b):
+    for i, meta in enumerate(meta_b):
         post_time = base_t2 + timedelta(seconds=i * random.randint(5, 11))
-        cluster_b.append({
-            "account": user,
+        item = {
+            "account": meta["account"],
+            "platform": meta["platform"],
+            "platform_icon": meta["platform_icon"],
+            "profile_url": meta["profile_url"],
+            "bot_role": meta["bot_role"],
+            "bot_desc": meta["bot_desc"],
             "timestamp": post_time.strftime("%H:%M:%S.%f")[:-3],
             "post_interval_sec": random.randint(4, 10),
-            "payload_text": "Surat edaran mutasi pejabat Dispenad resmi bocor. Ada pergeseran besar di Mabesad!",
+            "payload_text": meta["payload_text"],
             "hash_md5": "7d89ab56c12344ef8821098471bcca01",
             "semantic_similarity": round(random.uniform(0.91, 0.98), 3),
-            "account_age_days": random.randint(5, 20),
-            "followers": random.randint(30, 110),
-            "cluster": "Cluster Bravo-CIB (Fake Memo Dispenad)",
-            "proxy_ip": f"185.220.{random.randint(100,200)}.{random.randint(5,200)} [Data Center Proxy]"
-        })
+            "account_age_days": meta["account_age_days"],
+            "account_age_desc": f"{meta['account_age_days']} Hari (Sangat Baru)",
+            "followers": meta["followers"],
+            "follower_desc": f"{meta['followers']} Pengikut (Anomali Sepi)",
+            "automation_tool": meta["automation_tool"],
+            "proxy_ip": meta["proxy_location"],
+            "bot_probability": "97.8%",
+            "cluster": "Cluster Bravo-CIB (Fake Memo Dispenad - 5 Akun)"
+        }
+        cluster_b.append(item)
         
     return pd.DataFrame(cluster_a + cluster_b)
 

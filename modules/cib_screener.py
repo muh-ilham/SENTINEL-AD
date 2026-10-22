@@ -27,42 +27,106 @@ def render_cib_screener():
     ])
     
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
     # TAB 1: CIB TIMING & SEMANTIC BURST ANALYSIS
     # -----------------------------------------------------------------
     with tab_cib:
         st.markdown("### ⏱️ ANALISIS BURST TEMPORAL CIB (SINKRONISASI POSTINGAN &lt;60 DETIK)")
         st.markdown(
-            "Pola serangan CIB dicirikan oleh puluhan akun anonim mengunggah konten identik atau semantik serupa "
-            "dengan latensi di bawah 60 detik pasca berkas dilepas oleh simpul *seed*."
+            "<p style='color: #94A3B8; font-size: 0.92rem; margin-top: -6px;'>"
+            "<b>Coordinated Inauthentic Behavior (CIB)</b> adalah operasi manipulasi kognitif siber di mana sekelompok "
+            "akun bodong/botnet digerakkan otomatis oleh mesin secara serentak untuk memviralkan isu hoaks demi merusak wibawa TNI AD & stabilitas nasional."
+            "</p>",
+            unsafe_allow_html=True
         )
         
         cib_df = generate_cib_synchronized_clusters()
         
+        # 4 Ringkasan Metrik Taktis Utama
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         with col_m1:
-            st.metric("Total Akun Terindikasi Bot", "13 Akun", "+8 Terdeteksi Baru")
+            st.metric(
+                "Total Akun Terindikasi Bot", 
+                "13 Akun", 
+                "8 Klaster A + 5 Klaster B",
+                help="Total 13 akun bodong tertangkap basah menyebarkan narasi hoaks serentak pada platform TikTok, X, Instagram, Facebook, dan Telegram."
+            )
         with col_m2:
-            st.metric("Rerata Jeda Posting", "5.8 Detik", "Sub-60s Burst Window")
+            st.metric(
+                "Rerata Jeda Posting", 
+                "5.8 Detik", 
+                "Sub-60s Burst Window",
+                help="Jeda waktu antar unggahan hanya 3–8 detik. Manusia mustahil mengetik dan mengunggah secepat ini berulang-ulang."
+            )
         with col_m3:
-            st.metric("Kemiripan Semantik", "96.4%", "Cosine Similarity")
+            st.metric(
+                "Kemiripan Teks Narasi", 
+                "96.4%", 
+                "Cosine Similarity Template",
+                help="96.4% kata-kata dan susunan kalimat yang diunggah sama persis (template copas otomatis hasil generator skrip bot)."
+            )
         with col_m4:
-            st.metric("Asal Proksi / Node", "TOR & Cloud Hosting", "Anti-Geoloc")
+            st.metric(
+                "Asal Proksi / Server", 
+                "TOR & Cloud Proxy", 
+                "Eropa & Amerika (Anonim)",
+                help="Pelaku menggunakan jaringan perantara luar negeri (Belanda, Swiss, Jerman, AS) untuk menyembunyikan identitas asli dalang operasi."
+            )
             
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         
-        # Timeline of CIB bursts
-        col_chart, col_table = st.columns([6, 6])
+        # PANDUAN EDUKASI BAHASA AWAM
+        with st.expander("💡 PANDUAN BAHASA AWAM: BAGAIMANA CARA SISTEM MEMBUKTIKAN BAHWA INI BUKAN NETIZEN ASLI? (KLIK UNTUK MEMBACA)", expanded=False):
+            st.markdown(
+                """
+                <div style="background: #0B1120; border: 1px solid #1E293B; padding: 16px; border-radius: 6px; font-size: 0.88rem; line-height: 1.6; color: #CBD5E1;">
+                    <h4 style="color: #38BDF8; margin-top: 0; font-family: 'Chakra Petch', sans-serif;">🛡️ 4 Bukti Ilmiah Mengapa 13 Akun Ini Pasti Bot / Pasukan Buzzer:</h4>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <b style="color: #F8FAFC;">1. ⏱️ Kecepatan Waktu Mustahil (Jeda Unggah 3–8 Detik):</b><br/>
+                        Netizen manusia butuh waktu untuk membuka HP, membaca berita, mengetik komentar, dan mengunggahnya (rata-rata 1–3 menit). Akun-akun ini mengunggah postingan hanya berselang 3 hingga 8 detik satu sama lain secara berurutan. Pola tembakan cepat (*burst*) ini adalah ciri mutlak sistem otomatisasi komputer.
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <b style="color: #F8FAFC;">2. 📋 Isi Kalimat 'Copy-Paste' Seragam (Tingkat Kemiripan 96.4%):</b><br/>
+                        Jika netizen asli mengomentari suatu isu, gaya bahasa dan pilihan kata mereka pasti beragam. Namun 13 akun ini menggunakan susunan kalimat yang 96% identik (hanya dibolak-balik sedikit menggunakan teknik <i>spinning text</i>) untuk membanjiri linimasa secara terkoordinasi.
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <b style="color: #F8FAFC;">3. 🎭 Profil Bodong & Akun 'Siluman' (Umur Baru & Sepi Pengikut):</b><br/>
+                        Akun-akun ini rata-rata baru dibuat 2 hingga 14 hari yang lalu, foto profilnya menggunakan gambar AI atau comotan Google, serta memiliki pengikut sangat sedikit (14–85 followers) tanpa riwayat kehidupan nyata. Akun sengaja diproduksi massal (*bot farm*) khusus untuk kampanye propaganda.
+                    </div>
+                    
+                    <div>
+                        <b style="color: #F8FAFC;">4. 🌐 Menyamarkan Lokasi Geografis (Jalur TOR Exit Node & Data Center):</b><br/>
+                        Alih-alih menggunakan internet penyedia lokal Indonesia (seperti Telkomsel, Indosat, atau IndiHome), jejak internet akun-akun ini dialihkan melalui jaringan persembunyian anonim (TOR Node dan Proxy Server di Belanda, Swiss, Swedia, AS) agar identitas pelaku sebenarnya tidak mudah dilacak aparat hukum.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        
+        # Filter Klaster Akun
+        cluster_options = ["🌐 Semua Klaster (13 Akun Gabungan - Rekapitulasi Lengkap)"] + list(cib_df["cluster"].unique())
+        cluster_filter = st.selectbox(
+            "🔍 Pilih Klaster Ancaman CIB untuk Dianalisis:",
+            options=cluster_options
+        )
+        
+        if "Semua Klaster" in cluster_filter:
+            sub_cib = cib_df.copy()
+        else:
+            sub_cib = cib_df[cib_df["cluster"] == cluster_filter].copy()
+            
+        sub_cib["cumulative_time_sec"] = sub_cib["post_interval_sec"].cumsum()
+        
+        # Baris Grafik Linimasa & Ringkasan Platform
+        col_chart, col_platform = st.columns([7, 5])
         
         with col_chart:
             st.markdown("#### Linimasa Interval Posting Akun Bot (Detik)")
-            
-            cluster_filter = st.selectbox(
-                "Pilih Klaster CIB:",
-                options=list(cib_df["cluster"].unique())
-            )
-            
-            sub_cib = cib_df[cib_df["cluster"] == cluster_filter].copy()
-            sub_cib["cumulative_time_sec"] = sub_cib["post_interval_sec"].cumsum()
             
             fig_burst = px.scatter(
                 sub_cib,
@@ -71,7 +135,7 @@ def render_cib_screener():
                 size="semantic_similarity",
                 color="semantic_similarity",
                 color_continuous_scale="Reds",
-                hover_data=["timestamp", "proxy_ip", "account_age_days"],
+                hover_data=["platform", "bot_role", "timestamp", "account_age_desc", "follower_desc", "proxy_ip"],
                 labels={"cumulative_time_sec": "Detik Kumulatif Pasca Drop Awal", "account": "Identitas Akun Bot"}
             )
             fig_burst.update_layout(
@@ -79,27 +143,147 @@ def render_cib_screener():
                 plot_bgcolor="rgba(15,23,42,0.8)",
                 font=dict(family="JetBrains Mono", size=10, color="#F8FAFC"),
                 margin=dict(t=20, b=20, l=10, r=10),
-                height=320,
+                height=300,
                 xaxis=dict(gridcolor="#334155"),
                 yaxis=dict(gridcolor="#334155")
             )
             st.plotly_chart(fig_burst, use_container_width=True)
+            st.caption("📌 **Cara Membaca Grafik:** Setiap titik merah mewakili 1 akun bot. Sumbu X menunjukkan detik sejak isu pertama kali disebar. Titik-titik yang muncul beruntun cepat membuktikan proses unggahan otomatis mesin.")
             
-        with col_table:
-            st.markdown("#### Indikator Kesamaan Hash & Jejak Digital")
-            st.dataframe(
-                sub_cib[["account", "timestamp", "post_interval_sec", "semantic_similarity", "proxy_ip"]],
-                column_config={
-                    "account": st.column_config.TextColumn("Akun Bot"),
-                    "timestamp": st.column_config.TextColumn("Waktu Post"),
-                    "post_interval_sec": st.column_config.NumberColumn("Jeda (s)", format="%d s"),
-                    "semantic_similarity": st.column_config.ProgressColumn("Kemiripan", min_value=0.8, max_value=1.0, format="%.2f"),
-                    "proxy_ip": st.column_config.TextColumn("Jalur Jaringan / Node")
-                },
-                hide_index=True,
-                use_container_width=True,
-                height=320
+        with col_platform:
+            st.markdown("#### Distribusi Asal Platform & Peran Botnet")
+            
+            # Platform Counts
+            p_counts = sub_cib["platform"].value_counts().to_dict()
+            
+            c_p1, c_p2 = st.columns(2)
+            with c_p1:
+                st.markdown(
+                    """
+                    <div style="background: #111C2E; border: 1px solid #1E293B; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.8rem; margin-bottom: 8px;">
+                        <span style="color: #38BDF8;">🐦 X (Twitter):</span> <b>5 Akun</b><br/>
+                        <span style="color: #F43F5E;">📱 TikTok:</span> <b>4 Akun</b><br/>
+                        <span style="color: #EC4899;">📸 Instagram:</span> <b>2 Akun</b>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            with c_p2:
+                st.markdown(
+                    """
+                    <div style="background: #111C2E; border: 1px solid #1E293B; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.8rem; margin-bottom: 8px;">
+                        <span style="color: #3B82F6;">👥 Facebook:</span> <b>1 Akun</b><br/>
+                        <span style="color: #06B6D4;">✈️ Telegram:</span> <b>1 Akun</b><br/>
+                        <span style="color: #10B981;">🛡️ Status:</span> <b>13 Terdeteksi</b>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+            st.markdown(
+                """
+                <div style="background: #0B1120; border-left: 3px solid #F59E0B; padding: 8px 12px; border-radius: 4px; font-size: 0.78rem; color: #CBD5E1; margin-top: 4px;">
+                    <b>Struktur Pasukan Bot Terdeteksi:</b><br/>
+                    • <b>🚨 Seed (2 Akun):</b> Pelempar perdana berkas deepfake ke publik.<br/>
+                    • <b>⚡ Amplifier (6 Akun):</b> Pasukan pengganda kilat peniru algoritma FYP/Trending.<br/>
+                    • <b>👥 Sockpuppet (3 Akun):</b> Akun boneka penyusup ke grup komunitas.<br/>
+                    • <b>📢 Resonator (2 Akun):</b> Pemancing interaksi dengan men-tag akun berita.
+                </div>
+                """,
+                unsafe_allow_html=True
             )
+            
+        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+        
+        # TABEL LENGKAP 13 AKUN BESERTA TAUTAN YANG BISA DIKLIK
+        st.markdown("#### 📋 Rekapitulasi Rincian 13 Akun Bot & Tautan Profil Medsos")
+        st.caption("💡 *Tautan pada kolom **'Tautan Akun Medsos 🔗'** dapat diklik langsung untuk memeriksa keberadaan profil di platform aslinya.*")
+        
+        st.dataframe(
+            sub_cib[[
+                "platform_icon", "account", "profile_url", "bot_role", 
+                "post_interval_sec", "semantic_similarity", "account_age_desc", 
+                "follower_desc", "proxy_ip"
+            ]],
+            column_config={
+                "platform_icon": st.column_config.TextColumn("Asal Platform", width="medium"),
+                "account": st.column_config.TextColumn("Identitas Akun", width="medium"),
+                "profile_url": st.column_config.LinkColumn("Tautan Akun Medsos 🔗", display_text="Buka Profil Akun ↗", width="medium"),
+                "bot_role": st.column_config.TextColumn("Peran Botnet", width="medium"),
+                "post_interval_sec": st.column_config.NumberColumn("Jeda Unggah", format="%d detik", width="small"),
+                "semantic_similarity": st.column_config.ProgressColumn("Kemiripan Teks", min_value=0.8, max_value=1.0, format="%.1f%%", width="medium"),
+                "account_age_desc": st.column_config.TextColumn("Usia Akun", width="medium"),
+                "follower_desc": st.column_config.TextColumn("Jumlah Pengikut", width="medium"),
+                "proxy_ip": st.column_config.TextColumn("Jejak Lokasi / IP", width="large")
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=340
+        )
+        
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        
+        # INSPEKTUR FORENSIK DIGITAL PER AKUN (BEDAH PROFIL)
+        st.markdown("#### 🔎 Inspektur Forensik Digital Akun Terdeteksi (Bedah Profil)")
+        st.caption("Pilih salah satu dari 13 akun di bawah untuk melihat rincian bukti forensik digital dan narasi hoaks yang disebarkan:")
+        
+        selected_account = st.selectbox(
+            "Pilih Akun yang Ingin Dibedah Secara Mendalam:",
+            options=list(sub_cib["account"]),
+            format_func=lambda x: f"{sub_cib.loc[sub_cib['account']==x, 'platform_icon'].values[0]} {x} - {sub_cib.loc[sub_cib['account']==x, 'bot_role'].values[0]}"
+        )
+        
+        active_user_data = sub_cib[sub_cib["account"] == selected_account].iloc[0]
+        
+        with st.container(border=True):
+            col_u_left, col_u_right = st.columns([6, 6])
+            
+            with col_u_left:
+                st.markdown(f"##### {active_user_data['platform_icon']} {active_user_data['account']}")
+                st.markdown(f"**Peran dalam Operasi:** <span style='color: #EF4444; font-weight: bold;'>{active_user_data['bot_role']}</span>", unsafe_allow_html=True)
+                st.caption(f"ℹ️ {active_user_data['bot_desc']}")
+                
+                st.markdown(
+                    f"""
+                    <div style="background: #0B1120; border: 1px solid #1E293B; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.78rem; margin: 8px 0;">
+                        <div>• <b>Alat Otomasi:</b> <span style="color: #38BDF8;">{active_user_data['automation_tool']}</span></div>
+                        <div>• <b>Jalur Jaringan / Node:</b> <span style="color: #F59E0B;">{active_user_data['proxy_ip']}</span></div>
+                        <div>• <b>Probabilitas Bot:</b> <span style="color: #EF4444; font-weight: bold;">{active_user_data['bot_probability']}</span></div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                st.link_button(
+                    label=f"🌐 Kunjungi Profil Asli {selected_account} di {active_user_data['platform']} ↗",
+                    url=active_user_data['profile_url'],
+                    type="primary",
+                    use_container_width=True
+                )
+                
+            with col_u_right:
+                st.markdown("##### 📝 Narasi Hoaks yang Diunggah Akun Ini:")
+                st.markdown(
+                    f"""
+                    <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #EF4444; padding: 10px 14px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.82rem; color: #FCA5A5; margin-bottom: 10px; line-height: 1.5;">
+                        "{active_user_data['payload_text']}"
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                st.markdown(
+                    f"""
+                    <div style="background: #111C2E; padding: 10px; border-radius: 4px; font-size: 0.78rem; color: #CBD5E1;">
+                        <b>Indikator Anomali Otentikasi:</b><br/>
+                        • <b>Jeda Posting:</b> {active_user_data['post_interval_sec']} detik pasca pelepasan isu (Kecepatan Otomasi)<br/>
+                        • <b>Karakteristik Akun:</b> {active_user_data['account_age_desc']} | {active_user_data['follower_desc']}<br/>
+                        • <b>Tingkat Kemiripan Teks:</b> {round(active_user_data['semantic_similarity']*100, 1)}% identik dengan seed awal<br/>
+                        • <b>Rekomendasi Respons:</b> <span style="color: #10B981; font-weight: bold;">Siap Ditransmisikan ke Antrean Takedown BSSN</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
         # Forensic Conclusion Box
         st.markdown(
@@ -109,7 +293,7 @@ def render_cib_screener():
                 <span style="font-size: 0.85rem; color: #F1F5F9; margin-left: 10px;">
                     Perilaku di atas memenuhi kriteria <b>Coordinated Inauthentic Behavior (CIB)</b> tingkat tinggi. 
                     Pola unggahan serentak dalam durasi kurang dari 50 detik dengan teks nyaris identik 
-                    mengonfirmasi adanya orkestrasi skrip automasi (Botnet Farm) bukan interaksi publik organik.
+                    mengonfirmasi adanya orkestrasi skrip automasi (Botnet Farm) bukan interaksi publik organik. Seluruh 13 akun direkomendasikan untuk tindakan pemblokiran (takedown).
                 </span>
             </div>
             """,
