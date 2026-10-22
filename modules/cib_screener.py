@@ -9,6 +9,13 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from utils.data_generator import generate_cib_synchronized_clusters
+from utils.soar_storage import (
+    add_escalated_incident,
+    check_is_escalated,
+    get_escalated_incidents,
+    get_approved_incidents,
+    get_audit_logs
+)
 
 def render_cib_screener():
     """Renders the CIB & Multimodal Deepfake Screener module."""
@@ -293,7 +300,7 @@ def render_cib_screener():
                 
                 st.markdown(
                     f"""
-                    <div style="background: #111C2E; padding: 10px; border-radius: 4px; font-size: 0.78rem; color: #CBD5E1;">
+                    <div style="background: #111C2E; padding: 10px; border-radius: 4px; font-size: 0.78rem; color: #CBD5E1; margin-bottom: 12px;">
                         <b>Indikator Anomali Otentikasi:</b><br/>
                         • <b>Jeda Posting:</b> {active_user_data['post_interval_sec']} detik pasca pelepasan isu (Kecepatan Otomasi)<br/>
                         • <b>Karakteristik Akun:</b> {active_user_data['account_age_desc']} | {active_user_data['follower_desc']}<br/>
@@ -303,6 +310,112 @@ def render_cib_screener():
                     """,
                     unsafe_allow_html=True
                 )
+                
+                # Cek apakah akun spesifik ini sudah pernah dimasukkan ke antrean SOAR
+                account_inc_id = f"TKD-BOT-{abs(hash(str(active_user_data['account']))) % 100000}"
+                acc_alert = {
+                    "id": account_inc_id,
+                    "headline": f"Takedown Akun Bot {active_user_data['account']} ({active_user_data['platform']})"
+                }
+                is_esc, esc_info = check_is_escalated(acc_alert)
+                
+                if is_esc:
+                    esc_time = esc_info.get("escalated_at", "Tercatat di Sistem")
+                    esc_by = esc_info.get("escalated_by", "Analis")
+                    st.button("✅ TELAH MASUK ANTREAN TAKEDOWN SOAR", key=f"btn_tkd_{account_inc_id}_done", disabled=True, use_container_width=True)
+                    st.markdown(
+                        f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 4px; margin-top: 4px;">
+                        ✓ <b>STATUS:</b> MASUK ANTREAN SOAR<br/>
+                        ⏱ <b>Waktu:</b> {esc_time}<br/>
+                        👤 <b>Oleh:</b> {esc_by}<br/>
+                        👉 <i>Buka Modul 'Tactical SOAR & Otorisasi' untuk pengesahan Komandan</i>
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+                else:
+                    if st.button(f"🚨 Masukkan Akun Ini ke Antrean Takedown SOAR", key=f"btn_tkd_{account_inc_id}", type="primary", use_container_width=True):
+                        now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+                        role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+                        soar_record = {
+                            "id": account_inc_id,
+                            "title": f"Permohonan Takedown Akun Bot: {active_user_data['account']} ({active_user_data['platform']})",
+                            "headline": f"Takedown Akun Bot {active_user_data['account']} ({active_user_data['platform']})",
+                            "sample_text": f"Akun bot {active_user_data['account']} pada platform {active_user_data['platform']} menyebarkan narasi hoaks: '{active_user_data['payload_text']}'. Bukti URL: {active_user_data['profile_url']}.",
+                            "text": f"Akun bot {active_user_data['account']} pada platform {active_user_data['platform']} menyebarkan narasi hoaks: '{active_user_data['payload_text']}'. Bukti URL: {active_user_data['profile_url']}.",
+                            "platform": active_user_data["platform"],
+                            "root_platform": active_user_data["platform"],
+                            "level": "Kritis",
+                            "threat_level": "Kritis",
+                            "target_kodam": "Mabes TNI AD / Kominfo BSSN",
+                            "kodam": "Mabes TNI AD / Kominfo BSSN",
+                            "cib_cluster_size": len(sub_cib),
+                            "amplification_nodes": active_user_data.get("followers", 45),
+                            "virality_score": 92,
+                            "cib_probability": int(active_user_data.get("semantic_similarity", 0.95) * 100),
+                            "shares_count": active_user_data.get("followers", 45),
+                            "escalated_at": now_wib,
+                            "escalated_by": role_actor,
+                            "is_from_radar": True,
+                            "is_from_cib": True,
+                            "bot_account": active_user_data["account"],
+                            "bot_url": active_user_data["profile_url"]
+                        }
+                        add_escalated_incident(soar_record)
+                        st.session_state["approved_incidents"] = get_approved_incidents()
+                        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                        st.session_state["audit_logs"] = get_audit_logs()
+                        st.toast(f"Akun {active_user_data['account']} berhasil didaftarkan ke antrean Takedown SOAR!", icon="🚨")
+                        st.rerun()
+
+        # Operasi Takedown Kolektif (Batch Escalation)
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            col_b1, col_b2 = st.columns([8, 4])
+            with col_b1:
+                st.markdown(f"##### ⚡ Operasi Takedown Kolektif ({len(sub_cib)} Akun Bot Sekaligus)")
+                st.caption(f"Mengemas seluruh {len(sub_cib)} akun bot yang terdeteksi di klaster ini menjadi 1 Berkas Dossier Takedown Gabungan untuk langsung diajukan ke BSSN & Kominfo setelah disahkan Komandan.")
+            with col_b2:
+                batch_id = f"TKD-BATCH-CIB-{len(sub_cib)}"
+                batch_alert = {"id": batch_id, "headline": f"Takedown Massal Sindikat Bot CIB ({len(sub_cib)} Akun)"}
+                is_batch_esc, batch_esc_info = check_is_escalated(batch_alert)
+                
+                if is_batch_esc:
+                    st.button("✅ BATCH SUDAH DI-ESKALASI", disabled=True, use_container_width=True)
+                    st.caption("✓ Telah terdaftar di antrean SOAR.")
+                else:
+                    if st.button(f"⚡ Ajukan Takedown Massal ({len(sub_cib)} Akun)", key="btn_mass_takedown", type="primary", use_container_width=True):
+                        now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+                        role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+                        bot_list_str = ", ".join([str(r["account"]) for _, r in sub_cib.iterrows()])
+                        batch_record = {
+                            "id": batch_id,
+                            "title": f"Permohonan Takedown Massal: Sindikat CIB {len(sub_cib)} Akun Lintas Medsos",
+                            "headline": f"Takedown Massal Sindikat Bot CIB ({len(sub_cib)} Akun)",
+                            "sample_text": f"Paket permohonan takedown massal {len(sub_cib)} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
+                            "text": f"Paket permohonan takedown massal {len(sub_cib)} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
+                            "platform": "Lintas Medsos (Multi-Platform)",
+                            "root_platform": "Multi-Platform",
+                            "level": "Kritis",
+                            "threat_level": "Kritis",
+                            "target_kodam": "Mabes TNI AD / Kominfo BSSN",
+                            "kodam": "Mabes TNI AD / Kominfo BSSN",
+                            "cib_cluster_size": len(sub_cib),
+                            "amplification_nodes": int(sub_cib["followers"].sum()) if "followers" in sub_cib.columns else 120,
+                            "virality_score": 98,
+                            "cib_probability": 97,
+                            "shares_count": 50000,
+                            "escalated_at": now_wib,
+                            "escalated_by": role_actor,
+                            "is_from_radar": True,
+                            "is_from_cib": True,
+                            "bot_accounts_list": [str(r["account"]) for _, r in sub_cib.iterrows()]
+                        }
+                        add_escalated_incident(batch_record)
+                        st.session_state["approved_incidents"] = get_approved_incidents()
+                        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                        st.session_state["audit_logs"] = get_audit_logs()
+                        st.toast(f"Seluruh {len(sub_cib)} akun berhasil didaftarkan ke paket Takedown SOAR!", icon="⚡")
+                        st.rerun()
 
         # Forensic Conclusion Box
         st.markdown(
