@@ -88,28 +88,27 @@ def main():
         )
         
         st.markdown("### 🌐 SUMBER TELEMETRI (GO-LIVE)")
-        data_modes = [
-            "🔴 LIVE ONLINE OSINT (Internet Real-Time)",
-            "🟡 SIMULASI TAKTIS CADANGAN (Offline Mock)"
-        ]
+        st.session_state["data_source_mode"] = "live"
         
-        if "data_source_mode" not in st.session_state:
-            st.session_state["data_source_mode"] = "live"
-            
-        current_data_mode = st.radio(
-            "Pilih Mode Operasional:",
-            data_modes,
-            index=0 if st.session_state["data_source_mode"] == "live" else 1,
-            key="telemetry_mode_radio"
+        st.markdown(
+            """
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; border-radius: 6px; padding: 7px 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="color: #34D399; font-weight: bold; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace;">
+                    🟢 LIVE ONLINE OSINT
+                </span>
+                <span style="font-size: 0.68rem; background: #064E3B; color: #A7F3D0; padding: 2px 6px; border-radius: 4px; border: 1px solid #059669; font-weight: bold;">
+                    REAL-TIME
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-        st.session_state["data_source_mode"] = "live" if "LIVE" in current_data_mode else "mock"
         
-        if st.session_state["data_source_mode"] == "live":
-            if st.button("🔄 Tarik Data Nyata Terbaru (Sync OSINT)", use_container_width=True):
-                st.session_state["live_feed_cache"] = None
-                st.toast("Menarik data online real-time dari TikTok, IG, X, FB, YouTube & Media Daring...", icon="🌐")
-                st.rerun()
-            st.caption("📡 **Radar Terhubung:** TikTok, Instagram, X (Twitter), Facebook, YouTube, Media Daring")
+        if st.button("🔄 Tarik Data Nyata Terbaru (Sync OSINT)", use_container_width=True):
+            st.session_state["live_feed_cache"] = None
+            st.toast("Menarik data online real-time dari TikTok, IG, X, FB, YouTube & Media Daring...", icon="🌐")
+            st.rerun()
+        st.caption("📡 **Radar Terhubung:** TikTok, Instagram, X (Twitter), Facebook, YouTube, Media Daring")
                 
         with st.expander("⚙️ Konfigurasi API Resmi Lembaga"):
             st.text_input("X (Twitter) Bearer Token", type="password", placeholder="Bearer AAAA...", key="x_bearer_token")

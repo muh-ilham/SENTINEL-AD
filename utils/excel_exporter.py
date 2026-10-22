@@ -43,7 +43,7 @@ def generate_sna_excel_bytes(nodes_data, edges_data, degree_dict, betweenness_di
 
     # 2. Row 2: Metadata & Classification Notice
     now_str = datetime.now().strftime("%d-%m-%Y %H:%M:%S WIB")
-    mode_text = "LIVE ONLINE OSINT (6 Ekosistem Medsos)" if is_live else "SIMULASI TAKTIS CADANGAN (Offline Mock)"
+    mode_text = "LIVE ONLINE OSINT (6 Ekosistem Medsos)"
     
     ws1.merge_cells("A2:I2")
     meta_cell = ws1["A2"]

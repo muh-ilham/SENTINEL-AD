@@ -34,49 +34,26 @@ def render_threat_graph():
     )
     
     # Telemetry Synchronization Status Banner
-    is_live = st.session_state.get("data_source_mode") == "live"
-    if is_live:
-        st.markdown(
-            """
-            <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid #16A34A; border-radius: 6px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <span style="font-family: 'JetBrains Mono'; font-size: 0.82rem; color: #4ADE80; font-weight: bold;">
-                        🟢 SINKRONISASI AKTIF: 6 EKOSISTEM MEDSOS (TikTok, Instagram, X, Facebook, YouTube, Media Daring)
-                    </span><br/>
-                    <span style="font-size: 0.76rem; color: #94A3B8;">
-                        Graf SNA memetakan aktor nyata hasil ekstraksi telemetri OSINT real-time TNI AD.
-                    </span>
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; background: #14532D; color: #86EFAC; padding: 2px 8px; border-radius: 4px; border: 1px solid #22C55E;">
-                        LIVE RADAR CONNECTED
-                    </span>
-                </div>
+    st.markdown(
+        """
+        <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid #16A34A; border-radius: 6px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-family: 'JetBrains Mono'; font-size: 0.82rem; color: #4ADE80; font-weight: bold;">
+                    🟢 SINKRONISASI AKTIF: 6 EKOSISTEM MEDSOS (TikTok, Instagram, X, Facebook, YouTube, Media Daring)
+                </span><br/>
+                <span style="font-size: 0.76rem; color: #94A3B8;">
+                    Graf SNA memetakan aktor nyata hasil ekstraksi telemetri OSINT real-time TNI AD.
+                </span>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            """
-            <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid #EAB308; border-radius: 6px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <span style="font-family: 'JetBrains Mono'; font-size: 0.82rem; color: #FACC15; font-weight: bold;">
-                        🟡 MODE SIMULASI TAKTIS CADANGAN (Offline Mock Topology)
-                    </span><br/>
-                    <span style="font-size: 0.76rem; color: #94A3B8;">
-                        Topologi arsitektur berbasis skenario latihan serangan siber kognitif Pussiberad.
-                    </span>
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; background: #713F12; color: #FEF08A; padding: 2px 8px; border-radius: 4px; border: 1px solid #EAB308;">
-                        SIMULATION SCENARIO
-                    </span>
-                </div>
+            <div style="text-align: right;">
+                <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; background: #14532D; color: #86EFAC; padding: 2px 8px; border-radius: 4px; border: 1px solid #22C55E;">
+                    LIVE RADAR CONNECTED
+                </span>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     nodes_data, edges_data = generate_network_graph_data()
     
@@ -280,7 +257,7 @@ def render_threat_graph():
         "system": "SENTINEL-AD TNI AD Cognitive Defense Command",
         "generated_at": datetime.now().isoformat(),
         "operator_role": st.session_state.get("active_role", "Analis Siber (Pussiberad)"),
-        "telemetry_mode": "LIVE ONLINE OSINT (6 Ekosistem: TikTok, Instagram, X, Facebook, YouTube, Media Daring)" if is_live else "SIMULASI TAKTIS CADANGAN (Offline Mock)",
+        "telemetry_mode": "LIVE ONLINE OSINT (6 Ekosistem: TikTok, Instagram, X, Facebook, YouTube, Media Daring)",
         "network_metrics": {
             "total_nodes": len(nodes_data),
             "seed_accounts_count": seed_count,

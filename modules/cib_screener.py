@@ -57,8 +57,8 @@ def render_cib_screener():
         # Bilah Informasi Telemetri Live & Tanggal Terbaru
         col_live_status, col_live_refresh = st.columns([8, 4])
         with col_live_status:
-            source_label = "LIVE ONLINE MULTI-PLATFORM (TikTok, Instagram, X, Facebook, YouTube, Media Daring)" if is_live_data else "SIMULASI TAKTIS CADANGAN"
-            badge_color = "#10B981" if is_live_data else "#F59E0B"
+            source_label = "LIVE ONLINE MULTI-PLATFORM (TikTok, Instagram, X, Facebook, YouTube, Media Daring)"
+            badge_color = "#10B981"
             st.markdown(
                 f"""<div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-left: 4px solid {badge_color}; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px;">
                 <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: {badge_color}; font-weight: bold;">

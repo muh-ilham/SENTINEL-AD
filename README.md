@@ -29,9 +29,8 @@ Dikembangkan untuk mendeteksi, menganalisis, dan memitigasi operasi disinformasi
    - Berkas Takedown JSON terenkripsi standar regulasi BSSN & Kominfo.
    - Jejak audit kriptografis SHA-256 untuk rantai komando.
 
-6. **Dukungan Dual-Mode Telemetri:**
-   - **Mode Live Online OSINT:** Menyerap berita dan isu viral langsung dari internet secara real-time.
-   - **Mode Simulasi Taktis Cadangan:** Operasional mandiri offline untuk kondisi darurat perang informasi.
+6. **Telemetri Live Online OSINT Real-Time:**
+   - **Mode Live Online OSINT:** Menyerap berita dan isu viral langsung dari 6 ekosistem platform (TikTok, Instagram, X, Facebook, YouTube, dan Media Daring) secara real-time.
 
 ---
 

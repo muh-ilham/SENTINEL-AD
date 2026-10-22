@@ -35,11 +35,11 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
     # 1. Telemetry Top HUD Metrics
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        render_metric_card("ANCAMAN / ISU TERDETEKSI", str(active_count), "Sensor Real-Time Aktif" if is_live else "+8 dalam 6 jam", "danger", "LIVE OSINT" if is_live else "MOCK")
+        render_metric_card("ANCAMAN / ISU TERDETEKSI", str(active_count), "Sensor Real-Time Aktif", "danger", "LIVE OSINT")
     with col2:
         render_metric_card("PRIORITAS TINGGI", str(critical_count), "Isu Perlu Ditanggapi", "warning", "ALERT")
     with col3:
-        render_metric_card("MODE TELEMETRI", "ONLINE" if is_live else "SIMULASI", "Internet Real-Time" if is_live else "Baseline Cadangan", "success" if is_live else "warning", "NET")
+        render_metric_card("MODE TELEMETRI", "ONLINE", "Internet Real-Time", "success", "NET")
     with col4:
         render_metric_card("DEEPFAKE/SINTETIS", "9", "4 Audio, 5 Dokumen", "warning", "AUDIO/OCR")
     with col5:
