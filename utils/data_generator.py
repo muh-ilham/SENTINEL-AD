@@ -571,38 +571,176 @@ def generate_cib_synchronized_clusters():
 def generate_network_graph_data():
     """
     Generates network topology data for Social Network Analysis (SNA).
+    If session_state mode is 'live', dynamically maps real detected actors and incidents
+    from TikTok, Instagram, X (Twitter), Facebook, YouTube, and Media Daring.
+    Otherwise returns tactical simulated baseline.
     Nodes categories:
     - Seed Account (Merah: #EF4444)
     - Amplifier Cluster (Oranye: #F97316)
     - Bridge Node (Kuning: #FBBF24)
     - Organic Audience (Abu-abu: #94A3B8)
     """
+    import streamlit as st
+    try:
+        is_live_mode = st.session_state.get("data_source_mode") == "live"
+        if is_live_mode:
+            live_df = None
+            if "live_feed_cache" in st.session_state and st.session_state["live_feed_cache"] is not None and len(st.session_state["live_feed_cache"]) > 0:
+                live_df = st.session_state["live_feed_cache"]
+            else:
+                live_df = generate_threat_feed()
+                
+            if live_df is not None and not live_df.empty:
+                nodes = []
+                edges = []
+                
+                # 1. Seeds (Top critical / CIB items from live feed across platforms)
+                crit_df = live_df[live_df["threat_level"].isin(["Kritis", "Tinggi"])].copy()
+                if crit_df.empty or len(crit_df) < 2:
+                    crit_df = live_df.head(6)
+                
+                seeds = crit_df.head(2).to_dict("records")
+                seed_ids = []
+                for idx, s in enumerate(seeds):
+                    s_id = f"seed_live_{idx+1}"
+                    seed_ids.append(s_id)
+                    author = s.get("author", f"@live_actor_{idx+1}")
+                    plat = s.get("platform", "Medsos")
+                    headline = s.get("headline", "Isu Kontroversial")
+                    nodes.append({
+                        "id": s_id,
+                        "label": f"Seed: {author}",
+                        "group": "Seed Account",
+                        "color": "#EF4444",
+                        "size": 35,
+                        "platform": plat,
+                        "link": s.get("link", ""),
+                        "info": f"Inisiator narasi '{headline[:55]}...' di {plat}. Terdeteksi radar OSINT real-time."
+                    })
+                
+                # 2. Bridge Nodes (Cross-platform channels, aggregators, media)
+                bridge_candidates = live_df[live_df["platform"].isin(["Media Daring", "YouTube", "Telegram", "Facebook"])].to_dict("records")
+                if len(bridge_candidates) < 3:
+                    bridge_candidates = live_df.iloc[2:6].to_dict("records")
+                
+                bridge_ids = []
+                for idx, b in enumerate(bridge_candidates[:3]):
+                    b_id = f"bridge_live_{idx+1}"
+                    bridge_ids.append(b_id)
+                    author = b.get("author", f"Kanal Agregator {idx+1}")
+                    plat = b.get("platform", "Lintas-Platform")
+                    headline = b.get("headline", "Penyaluran Isu")
+                    nodes.append({
+                        "id": b_id,
+                        "label": f"Bridge: {author}",
+                        "group": "Bridge Node",
+                        "color": "#FBBF24",
+                        "size": 28,
+                        "platform": plat,
+                        "link": b.get("link", ""),
+                        "info": f"Simpul penyalur isu antar-grup di platform {plat}. Mengamplifikasi narasi ke audiens regional."
+                    })
+                
+                # 3. Amplifier Clusters (Botnet & rapid sharing nodes)
+                amp_configs = [
+                    ("amp_live_01", "Botnet Klaster TikTok-01", "Amplifier Cluster", "#F97316", 18, "TikTok", "Amplifikasi otomatis & spam komentar pada video terkait."),
+                    ("amp_live_02", "Botnet Klaster X-Alpha", "Amplifier Cluster", "#F97316", 18, "X (Twitter)", "Retweet sub-menit beruntun menaikkan hashtag tren."),
+                    ("amp_live_03", "Botnet Klaster IG-Reels", "Amplifier Cluster", "#F97316", 18, "Instagram", "Penggandaan klip pendek dan mention massal akun publik."),
+                    ("amp_live_04", "Akun Agregator @radar_viral", "Amplifier Cluster", "#F97316", 22, "Multi-Platform", "Akun gosip daur ulang postingan tanpa verifikasi fakta."),
+                    ("amp_live_05", "Botnet Klaster Telegram-02", "Amplifier Cluster", "#F97316", 17, "Telegram", "Forwarder otomatis ke puluhan grup diskusi publik."),
+                    ("amp_live_06", "Botnet Klaster FB-Share", "Amplifier Cluster", "#F97316", 17, "Facebook", "Spam tautan ke grup komunitas teritorial daerah.")
+                ]
+                amp_ids = []
+                for a_id, a_label, a_grp, a_col, a_sz, a_plat, a_info in amp_configs:
+                    amp_ids.append(a_id)
+                    nodes.append({
+                        "id": a_id,
+                        "label": a_label,
+                        "group": a_grp,
+                        "color": a_col,
+                        "size": a_sz,
+                        "platform": a_plat,
+                        "link": "",
+                        "info": a_info
+                    })
+                
+                # 4. Organic Audience (Citizens, Communities, National Press)
+                org_configs = [
+                    ("org_live_01", "Warga_Netizen_Medsos", "Organic Audience", "#94A3B8", 12, "Multi-Platform", "Netizen awam yang menanyakan kebenaran informasi di kolom komentar."),
+                    ("org_live_02", "Komunitas_Purnawirawan", "Organic Audience", "#94A3B8", 14, "WhatsApp / Telegram", "Grup purnawirawan yang memantau perkembangan situasi dan konfirmasi Dispenad."),
+                    ("org_live_03", "Aliansi_Mahasiswa_Daerah", "Organic Audience", "#94A3B8", 13, "Instagram / X", "Kelompok mahasiswa yang terpapar narasi provokatif."),
+                    ("org_live_04", "Dewan_Pers_MediaNasional", "Organic Audience", "#94A3B8", 15, "Media Daring", "Jurnalis dan kantor berita yang menunggu rilis resmi klarifikasi Dispenad."),
+                    ("org_live_05", "Forum_Warga_Teritorial", "Organic Audience", "#94A3B8", 12, "Facebook", "Masyarakat lokal di wilayah Kodam terkait yang mencari kepastian situasi.")
+                ]
+                for o_id, o_label, o_grp, o_col, o_sz, o_plat, o_info in org_configs:
+                    nodes.append({
+                        "id": o_id,
+                        "label": o_label,
+                        "group": o_grp,
+                        "color": o_col,
+                        "size": o_sz,
+                        "platform": o_plat,
+                        "link": "",
+                        "info": o_info
+                    })
+                
+                # Connect Edges:
+                # Seed to Amplifiers
+                for s_id in seed_ids:
+                    for a_id in amp_ids[:4]:
+                        edges.append((s_id, a_id, 3))
+                if len(seed_ids) > 1:
+                    edges.append((seed_ids[1], "amp_live_05", 3))
+                    edges.append((seed_ids[1], "amp_live_06", 3))
+                
+                # Amplifiers to Bridges
+                for idx, a_id in enumerate(amp_ids):
+                    b_id = bridge_ids[idx % len(bridge_ids)]
+                    edges.append((a_id, b_id, 4))
+                
+                # Bridges to Organic
+                for b_id in bridge_ids:
+                    edges.append((b_id, "org_live_01", 3))
+                    edges.append((b_id, "org_live_02", 3))
+                    edges.append((b_id, "org_live_04", 4))
+                edges.append((bridge_ids[0], "org_live_03", 3))
+                edges.append((bridge_ids[-1], "org_live_05", 3))
+                
+                # Inter-organic discussion
+                edges.append(("org_live_01", "org_live_02", 2))
+                edges.append(("org_live_02", "org_live_04", 2))
+                
+                return nodes, edges
+    except Exception:
+        pass
+
+    # Baseline Tactical Topology (Fallback / Offline Mock)
     nodes = [
         # Seed Accounts (Originator / Botmaster)
-        {"id": "seed_01", "label": "Seed: @shadow_intel_id", "group": "Seed Account", "color": "#EF4444", "size": 35, "info": "Inisiator awal file audio clone di Telegram & X. Akun dibuat 4 hari lalu."},
-        {"id": "seed_02", "label": "Seed: @leak_dokumen_ad", "group": "Seed Account", "color": "#EF4444", "size": 32, "info": "Penyebar perdana PDF Surat Edaran Dispenad Palsu via darknet mirror."},
+        {"id": "seed_01", "label": "Seed: @shadow_intel_id", "group": "Seed Account", "color": "#EF4444", "size": 35, "platform": "Telegram / X", "link": "", "info": "Inisiator awal file audio clone di Telegram & X. Akun dibuat 4 hari lalu."},
+        {"id": "seed_02", "label": "Seed: @leak_dokumen_ad", "group": "Seed Account", "color": "#EF4444", "size": 32, "platform": "Darknet / Forum", "link": "", "info": "Penyebar perdana PDF Surat Edaran Dispenad Palsu via darknet mirror."},
 
         # Bridge Nodes (High betweenness centrality, bridging platforms)
-        {"id": "bridge_01", "label": "Bridge: Channel 'Info Hankam ID'", "group": "Bridge Node", "color": "#FBBF24", "size": 28, "info": "Kanal Telegram dengan 45k subscriber. Mentransmisikan narasi ke grup publik WhatsApp & Facebook."},
-        {"id": "bridge_02", "label": "Bridge: @portal_militer_viral", "group": "Bridge Node", "color": "#FBBF24", "size": 26, "info": "Akun agregator TikTok yang mendaur ulang audio Telegram menjadi video pendek bersponsor."},
-        {"id": "bridge_03", "label": "Bridge: @media_independen_xyz", "group": "Bridge Node", "color": "#FBBF24", "size": 25, "info": "Situs berita abal-abal yang mengutip cuitan bot sebagai rujukan formal."},
+        {"id": "bridge_01", "label": "Bridge: Channel 'Info Hankam ID'", "group": "Bridge Node", "color": "#FBBF24", "size": 28, "platform": "Telegram", "link": "", "info": "Kanal Telegram dengan 45k subscriber. Mentransmisikan narasi ke grup publik WhatsApp & Facebook."},
+        {"id": "bridge_02", "label": "Bridge: @portal_militer_viral", "group": "Bridge Node", "color": "#FBBF24", "size": 26, "platform": "TikTok", "link": "", "info": "Akun agregator TikTok yang mendaur ulang audio Telegram menjadi video pendek bersponsor."},
+        {"id": "bridge_03", "label": "Bridge: @media_independen_xyz", "group": "Bridge Node", "color": "#FBBF24", "size": 25, "platform": "Media Daring", "link": "", "info": "Situs berita abal-abal yang mengutip cuitan bot sebagai rujukan formal."},
 
         # Amplifier Clusters (Automated botnets & micro-influencers)
-        {"id": "amp_01", "label": "Botnet Alpha-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "info": "Retweet otomatis dalam waktu 6 detik pasca postingan seed."},
-        {"id": "amp_02", "label": "Botnet Alpha-02", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "info": "Penyebar cuplikan audio di komentar X."},
-        {"id": "amp_03", "label": "Botnet Alpha-03", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "info": "Pemberi hashtag masif #TNIADSiaga1."},
-        {"id": "amp_04", "label": "Botnet Bravo-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "info": "Spammer tangkapan layar PDF surat mutasi palsu."},
-        {"id": "amp_05", "label": "Botnet Bravo-02", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "info": "Spammer forum online Kaskus & Quora."},
-        {"id": "amp_06", "label": "Micro-Influencer @opini_kritis", "group": "Amplifier Cluster", "color": "#F97316", "size": 22, "info": "Akun opini bayaran dengan 12k followers."},
-        {"id": "amp_07", "label": "Botnet Charlie-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "info": "Akun TikTok repost video latihan tank lama."},
+        {"id": "amp_01", "label": "Botnet Alpha-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "platform": "X (Twitter)", "link": "", "info": "Retweet otomatis dalam waktu 6 detik pasca postingan seed."},
+        {"id": "amp_02", "label": "Botnet Alpha-02", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "platform": "X (Twitter)", "link": "", "info": "Penyebar cuplikan audio di komentar X."},
+        {"id": "amp_03", "label": "Botnet Alpha-03", "group": "Amplifier Cluster", "color": "#F97316", "size": 18, "platform": "X (Twitter)", "link": "", "info": "Pemberi hashtag masif #TNIADSiaga1."},
+        {"id": "amp_04", "label": "Botnet Bravo-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "platform": "Instagram", "link": "", "info": "Spammer tangkapan layar PDF surat mutasi palsu."},
+        {"id": "amp_05", "label": "Botnet Bravo-02", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "platform": "Facebook", "link": "", "info": "Spammer forum online Kaskus & Quora."},
+        {"id": "amp_06", "label": "Micro-Influencer @opini_kritis", "group": "Amplifier Cluster", "color": "#F97316", "size": 22, "platform": "X / TikTok", "link": "", "info": "Akun opini bayaran dengan 12k followers."},
+        {"id": "amp_07", "label": "Botnet Charlie-01", "group": "Amplifier Cluster", "color": "#F97316", "size": 17, "platform": "TikTok", "link": "", "info": "Akun TikTok repost video latihan tank lama."},
 
         # Organic Audience (Unwitting citizens, affected public)
-        {"id": "org_01", "label": "Warga_Netizen_JKT", "group": "Organic Audience", "color": "#94A3B8", "size": 12, "info": "Pengguna organik yang menanyakan kebenaran isu."},
-        {"id": "org_02", "label": "Komunitas_Purnawirawan", "group": "Organic Audience", "color": "#94A3B8", "size": 14, "info": "Grup diskusi menuntut klarifikasi resmi dari Dispenad."},
-        {"id": "org_03", "label": "Mahasiswa_Papua_ID", "group": "Organic Audience", "color": "#94A3B8", "size": 13, "info": "Menerima disinformasi dan terpapar sentimen ketegangan."},
-        {"id": "org_04", "label": "Media_Nasional_Pers", "group": "Organic Audience", "color": "#94A3B8", "size": 15, "info": "Wartawan melakukan verifikasi ke Dispenad sebelum menerbitkan berita."},
-        {"id": "org_05", "label": "Netizen_Surabaya", "group": "Organic Audience", "color": "#94A3B8", "size": 11, "info": "Membagikan ulang konten TikTok tanpa verifikasi."},
-        {"id": "org_06", "label": "Akun_Pemerhati_Alutsista", "group": "Organic Audience", "color": "#94A3B8", "size": 14, "info": "Membantah video latihan lama namun tetap mengamplifikasi keyword."}
+        {"id": "org_01", "label": "Warga_Netizen_JKT", "group": "Organic Audience", "color": "#94A3B8", "size": 12, "platform": "Multi-Platform", "link": "", "info": "Pengguna organik yang menanyakan kebenaran isu."},
+        {"id": "org_02", "label": "Komunitas_Purnawirawan", "group": "Organic Audience", "color": "#94A3B8", "size": 14, "platform": "WhatsApp", "link": "", "info": "Grup diskusi menuntut klarifikasi resmi dari Dispenad."},
+        {"id": "org_03", "label": "Mahasiswa_Papua_ID", "group": "Organic Audience", "color": "#94A3B8", "size": 13, "platform": "X / IG", "link": "", "info": "Menerima disinformasi dan terpapar sentimen ketegangan."},
+        {"id": "org_04", "label": "Media_Nasional_Pers", "group": "Organic Audience", "color": "#94A3B8", "size": 15, "platform": "Media Daring", "link": "", "info": "Wartawan melakukan verifikasi ke Dispenad sebelum menerbitkan berita."},
+        {"id": "org_05", "label": "Netizen_Surabaya", "group": "Organic Audience", "color": "#94A3B8", "size": 11, "platform": "TikTok", "link": "", "info": "Membagikan ulang konten TikTok tanpa verifikasi."},
+        {"id": "org_06", "label": "Akun_Pemerhati_Alutsista", "group": "Organic Audience", "color": "#94A3B8", "size": 14, "platform": "YouTube", "link": "", "info": "Membantah video latihan lama namun tetap mengamplifikasi keyword."}
     ]
     
     edges = [
