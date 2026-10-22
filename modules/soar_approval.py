@@ -13,6 +13,10 @@ from utils.soar_storage import (
     get_escalated_incidents,
     get_approved_incidents,
     mark_incident_approved,
+    get_rejected_incidents,
+    mark_incident_rejected,
+    revoke_incident_status,
+    remove_escalated_incident,
     get_audit_logs
 )
 
@@ -23,6 +27,9 @@ def init_audit_logs():
         
     if "approved_incidents" not in st.session_state:
         st.session_state["approved_incidents"] = get_approved_incidents()
+        
+    if "rejected_incidents" not in st.session_state:
+        st.session_state["rejected_incidents"] = get_rejected_incidents()
         
     if "escalated_soar_incidents" not in st.session_state:
         st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
@@ -79,6 +86,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         
         active_inc = next(item for item in all_incidents if item["id"] == selected_inc_id)
         is_approved = selected_inc_id in st.session_state["approved_incidents"]
+        is_rejected = selected_inc_id in st.session_state["rejected_incidents"]
         
         inc_id = active_inc.get('id', 'INC-SOAR')
         inc_title = active_inc.get('title', active_inc.get('headline', 'Insiden Ancaman Siber'))
@@ -87,8 +95,16 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         col_summary, col_downloads = st.columns([7, 5])
         
         with col_summary:
-            status_text = "DISETUJUI OLEH KOMANDAN" if is_approved else "MENUNGGU PERSETUJUAN PERWIRA MENENGAH"
-            status_color = "#10B981" if is_approved else "#F59E0B"
+            if is_approved:
+                status_text = "DISETUJUI OLEH KOMANDAN"
+                status_color = "#10B981"
+            elif is_rejected:
+                status_text = "DITOLAK KOMANDAN (FALSE POSITIVE)"
+                status_color = "#EF4444"
+            else:
+                status_text = "MENUNGGU PERSETUJUAN PERWIRA MENENGAH"
+                status_color = "#F59E0B"
+                
             target_kodam_val = active_inc.get('target_kodam', active_inc.get('kodam', 'TNI AD'))
             cib_cluster_val = active_inc.get('cib_cluster_size', active_inc.get('amplification_nodes', 28))
             evidence_val = "Neural Vocoder 16kHz Cutoff / MD5 e99a18c4..." if not active_inc.get('is_from_radar') else f"Tautan Langsung {active_inc.get('platform', 'Medsos')} / Log Telemetri C2 SHA-256"
@@ -107,6 +123,9 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
 </div>
 </div>"""
             st.markdown(card_html, unsafe_allow_html=True)
+            
+            if is_rejected:
+                st.error("⛔ **Status Insiden Ditolak:** Insiden ini telah ditandai sebagai *Bukan Ancaman / False Positive* oleh Komandan. Seluruh aksi otomatisasi dibekukan.")
             
             # Fact-Checking Infographic Brief
             st.markdown("#### 📢 Materi Briefing Komunikasi Publik Dispenad")
@@ -171,7 +190,9 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             )
             
             if st.button("📡 Kirimkan Dossier Takedown Otomatis ke API BSSN", type="primary", use_container_width=True):
-                if not is_approved:
+                if is_rejected:
+                    st.error("⛔ Transmisi Ditolak: Paket SOAR berstatus 'Ditolak/False Positive' tidak dapat dikirim ke mitra agensi.")
+                elif not is_approved:
                     st.warning("⚠️ Perhatian: Paket SOAR belum disetujui secara digital oleh Komandan. Hanya paket berstatus 'Approved' yang dapat dikirim otomatis.")
                 else:
                     st.success(f"✅ Berhasil ditransmisikan ke BSSN Gateway! Tiket ID: #BSSN-TKD-{inc_id}")
@@ -184,6 +205,20 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                         "status": "TERKIRIM INTER-AGENCY",
                         "hash": "a4c7e190...77b2"
                     })
+                    
+            # Opsi Hapus Antrean SOAR langsung dari Tab 1
+            if active_inc.get("is_from_radar") or active_inc.get("id") in get_escalated_incidents():
+                st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+                with st.expander("⚙️ Manajemen Antrean Insiden"):
+                    st.caption("Menghapus insiden ini dari antrean SOAR dan mengaktifkan kembali tombol eskalasi di Radar C2:")
+                    if st.button("🗑️ Batalkan & Hapus dari Antrean SOAR", key=f"del_tab1_{inc_id}", use_container_width=True):
+                        remove_escalated_incident(inc_id, current_role)
+                        st.session_state["approved_incidents"] = get_approved_incidents()
+                        st.session_state["rejected_incidents"] = get_rejected_incidents()
+                        st.session_state["audit_logs"] = get_audit_logs()
+                        st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                        st.toast(f"Insiden {inc_id} berhasil dihapus dari antrean SOAR!", icon="🗑️")
+                        st.rerun()
 
     # -------------------------------------------------------------
     # TAB 2: RBAC COMMANDER APPROVAL
@@ -192,7 +227,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         st.markdown("### 🎖️ RUKUN OTORISASI BERJENJANG (ROLE-BASED ACCESS CONTROL)")
         st.markdown(
             "Menjaga *Chain of Command* dan akuntabilitas hukum. Hanya peran **Perwira Menengah / Komandan** "
-            "yang berhak memberikan otorisasi penindakan dan membubuhkan tanda tangan kriptografis."
+            "yang berhak memberikan otorisasi penindakan, menolak false positive, mencabut otorisasi, atau membubuhkan tanda tangan kriptografis."
         )
         
         # Display Current Active Role
@@ -214,17 +249,54 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             st.markdown("#### Daftar Antrean Permohonan Otorisasi SOAR")
             all_incidents = get_all_soar_incidents()
             
+            # Filter Status Antrean
+            status_filter = st.radio(
+                "Saring Antrean:",
+                ["Semua", "🟡 Menunggu Persetujuan", "🟢 Sudah Disetujui", "🔴 Ditolak"],
+                horizontal=True
+            )
+            
+            filtered_incidents = []
             for inc in all_incidents:
+                i_id = inc["id"]
+                is_app = i_id in st.session_state["approved_incidents"]
+                is_rej = i_id in st.session_state["rejected_incidents"]
+                
+                if status_filter == "🟡 Menunggu Persetujuan" and (is_app or is_rej):
+                    continue
+                elif status_filter == "🟢 Sudah Disetujui" and not is_app:
+                    continue
+                elif status_filter == "🔴 Ditolak" and not is_rej:
+                    continue
+                filtered_incidents.append(inc)
+                
+            if not filtered_incidents:
+                st.info(f"Tidak ada antrean insiden dengan status '{status_filter}'.")
+            
+            is_commander = "Komandan" in current_role
+            
+            for inc in filtered_incidents:
                 inc_id = inc["id"]
                 already_approved = inc_id in st.session_state["approved_incidents"]
-                btn_disabled = already_approved or ("Komandan" not in current_role)
+                already_rejected = inc_id in st.session_state["rejected_incidents"]
                 is_from_radar = inc.get("is_from_radar", False)
                 
                 with st.container():
                     radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 4px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>" if is_from_radar else ""
-                    approval_status_text = "[STATUS: DISETUJUI KOMANDAN]" if already_approved else "[MENUNGGU PERSETUJUAN]"
-                    approval_status_color = "#10B981" if already_approved else "#F59E0B"
-                    card_border_color = "#10B981" if already_approved else "#EF4444"
+                    
+                    if already_approved:
+                        approval_status_text = "[STATUS: DISETUJUI KOMANDAN]"
+                        approval_status_color = "#10B981"
+                        card_border_color = "#10B981"
+                    elif already_rejected:
+                        approval_status_text = "[STATUS: DITOLAK / FALSE POSITIVE]"
+                        approval_status_color = "#EF4444"
+                        card_border_color = "#EF4444"
+                    else:
+                        approval_status_text = "[MENUNGGU PERSETUJUAN]"
+                        approval_status_color = "#F59E0B"
+                        card_border_color = "#F59E0B"
+                        
                     card_level = inc.get('level', inc.get('threat_level', 'Kritis'))
                     card_kodam = inc.get('target_kodam', inc.get('kodam', 'Mabesad'))
                     inc_title = inc.get('title', inc.get('headline', 'Insiden Ancaman'))
@@ -240,18 +312,68 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
 </div>"""
                     st.markdown(card_tab2, unsafe_allow_html=True)
                     
-                    if not already_approved:
-                        if "Komandan" in current_role:
-                            if st.button(f"✍️ Setujui & Tanda Tangan Digital ({inc_id})", key=f"appr_{inc_id}", type="primary"):
-                                mark_incident_approved(inc_id, current_role)
-                                st.session_state["approved_incidents"] = get_approved_incidents()
-                                st.session_state["audit_logs"] = get_audit_logs()
-                                st.success(f"Insiden {inc_id} berhasil disetujui dan ditandatangani secara digital!")
-                                st.rerun()
-                        else:
-                            st.caption(f"🔒 Tombol persetujuan terkunci. Pindah ke peran 'Perwira Menengah / Komandan' di sidebar untuk menandatangani.")
+                    # Alur Aksi Berdasarkan Status
+                    if already_approved:
+                        c_app_1, c_app_2 = st.columns([7, 3])
+                        with c_app_1:
+                            st.caption("✅ Dokumen telah disahkan secara kriptografis SHA-256.")
+                        with c_app_2:
+                            if is_commander:
+                                if st.button(f"↩️ Cabut Izin", key=f"revoke_{inc_id}", help="Batalkan persetujuan dan kembalikan ke status pending"):
+                                    revoke_incident_status(inc_id, current_role)
+                                    st.session_state["approved_incidents"] = get_approved_incidents()
+                                    st.session_state["rejected_incidents"] = get_rejected_incidents()
+                                    st.session_state["audit_logs"] = get_audit_logs()
+                                    st.toast(f"Persetujuan {inc_id} telah dicabut.", icon="↩️")
+                                    st.rerun()
+                    elif already_rejected:
+                        c_rej_1, c_rej_2 = st.columns([7, 3])
+                        with c_rej_1:
+                            st.caption("⛔ Insiden ditandai sebagai Bukan Ancaman / False Positive.")
+                        with c_rej_2:
+                            if is_commander:
+                                if st.button(f"🔄 Buka Ulang", key=f"reopen_{inc_id}", help="Buka kembali untuk evaluasi ulang"):
+                                    revoke_incident_status(inc_id, current_role)
+                                    st.session_state["approved_incidents"] = get_approved_incidents()
+                                    st.session_state["rejected_incidents"] = get_rejected_incidents()
+                                    st.session_state["audit_logs"] = get_audit_logs()
+                                    st.toast(f"Insiden {inc_id} dibuka kembali.", icon="🔄")
+                                    st.rerun()
                     else:
-                        st.caption("✅ Dokumen telah ditandatangani secara kriptografis SHA-256.")
+                        # Status Pending / Menunggu Otorisasi
+                        if is_commander:
+                            c_btn_1, c_btn_2 = st.columns([6, 4])
+                            with c_btn_1:
+                                if st.button(f"✍️ Setujui ({inc_id})", key=f"appr_{inc_id}", type="primary", use_container_width=True):
+                                    mark_incident_approved(inc_id, current_role)
+                                    st.session_state["approved_incidents"] = get_approved_incidents()
+                                    st.session_state["rejected_incidents"] = get_rejected_incidents()
+                                    st.session_state["audit_logs"] = get_audit_logs()
+                                    st.toast(f"Insiden {inc_id} berhasil disetujui!", icon="✍️")
+                                    st.rerun()
+                            with c_btn_2:
+                                if st.button(f"⛔ Tolak", key=f"rej_{inc_id}", use_container_width=True, help="Tolak insiden sebagai False Positive"):
+                                    mark_incident_rejected(inc_id, current_role)
+                                    st.session_state["approved_incidents"] = get_approved_incidents()
+                                    st.session_state["rejected_incidents"] = get_rejected_incidents()
+                                    st.session_state["audit_logs"] = get_audit_logs()
+                                    st.toast(f"Insiden {inc_id} ditolak sebagai False Positive.", icon="⛔")
+                                    st.rerun()
+                        else:
+                            st.caption("🔒 Tombol otorisasi terkunci. Pindah ke peran 'Perwira Menengah / Komandan' di sidebar untuk menandatangani atau menolak.")
+                    
+                    # Tombol Batalkan Eskalasi / Hapus Antrean untuk insiden radar atau eskalasi dinamis
+                    if is_from_radar or inc_id in get_escalated_incidents():
+                        if st.button(f"🗑️ Batalkan & Hapus dari Antrean ({inc_id})", key=f"del_queue_{inc_id}"):
+                            remove_escalated_incident(inc_id, current_role)
+                            st.session_state["approved_incidents"] = get_approved_incidents()
+                            st.session_state["rejected_incidents"] = get_rejected_incidents()
+                            st.session_state["audit_logs"] = get_audit_logs()
+                            st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                            st.toast(f"Insiden {inc_id} dihapus dari antrean SOAR. Tombol di Radar kembali aktif.", icon="🗑️")
+                            st.rerun()
+                            
+                    st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
         with col_approval_right:
             st.markdown("#### Matriks Hak Akses (RBAC Matrix)")
@@ -261,7 +383,10 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 {"Aksi Sistem": "Uji Wargaming & Personas", "Pussiberad": "✅ YA", "Dispenad": "✅ YA", "Komandan": "✅ YA"},
                 {"Aksi Sistem": "Klarifikasi Pers Dispenad", "Pussiberad": "❌ Tinjau", "Dispenad": "✅ Rilis", "Komandan": "✅ Otorisasi"},
                 {"Aksi Sistem": "Persetujuan Takedown Eksternal", "Pussiberad": "❌ Draf", "Dispenad": "❌ Tinjau", "Komandan": "✅ MUTLAK"},
-                {"Aksi Sistem": "Tanda Tangan Kriptografi", "Pussiberad": "❌ Dilarang", "Dispenad": "❌ Dilarang", "Komandan": "✅ SAH"}
+                {"Aksi Sistem": "Tanda Tangan Kriptografi", "Pussiberad": "❌ Dilarang", "Dispenad": "❌ Dilarang", "Komandan": "✅ SAH"},
+                {"Aksi Sistem": "Tolak Otorisasi (Reject FP)", "Pussiberad": "❌ Usul", "Dispenad": "❌ Usul", "Komandan": "✅ MUTLAK"},
+                {"Aksi Sistem": "Cabut Persetujuan (Revoke)", "Pussiberad": "❌ Dilarang", "Dispenad": "❌ Dilarang", "Komandan": "✅ SAH"},
+                {"Aksi Sistem": "Hapus dari Antrean SOAR", "Pussiberad": "✅ YA", "Dispenad": "✅ YA", "Komandan": "✅ YA"}
             ]
             
             st.dataframe(

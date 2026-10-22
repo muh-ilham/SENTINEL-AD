@@ -1,6 +1,6 @@
 """
 utils/soar_storage.py - Persistent Storage for SOAR Escalations, Approvals & Audit Trail
-Ensures all escalated incidents, commander approvals, and audit logs persist across
+Ensures all escalated incidents, commander approvals, rejections, and audit logs persist across
 browser refreshes (F5), new sessions, and dynamic live feed re-fetches.
 """
 
@@ -25,6 +25,7 @@ def _ensure_storage():
         initial_data = {
             "escalated_incidents": {},
             "approved_incidents": [],
+            "rejected_incidents": [],
             "audit_logs": [
                 {
                     "timestamp": "2026-10-20 14:10:22 WIB",
@@ -54,9 +55,12 @@ def load_storage():
     _ensure_storage()
     try:
         with open(STORAGE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if "rejected_incidents" not in data:
+                data["rejected_incidents"] = []
+            return data
     except Exception:
-        return {"escalated_incidents": {}, "approved_incidents": [], "audit_logs": []}
+        return {"escalated_incidents": {}, "approved_incidents": [], "rejected_incidents": [], "audit_logs": []}
 
 def save_storage(data):
     """Saves storage dictionary to JSON file."""
@@ -114,6 +118,47 @@ def add_escalated_incident(soar_record):
     data["audit_logs"].insert(0, audit_entry)
     save_storage(data)
 
+def remove_escalated_incident(inc_id, actor_role="Analis"):
+    """
+    Removes an incident from escalated queue and resets its status.
+    Allows user to re-escalate if needed.
+    """
+    data = load_storage()
+    removed_title = inc_id
+    
+    # 1. Remove by exact key
+    if inc_id in data["escalated_incidents"]:
+        removed_title = data["escalated_incidents"][inc_id].get("title", inc_id)
+        del data["escalated_incidents"][inc_id]
+        
+    # 2. Remove by normalized title check (in case ID differed)
+    norm_target = _normalize_title(inc_id)
+    keys_to_del = []
+    for k, v in data["escalated_incidents"].items():
+        if _normalize_title(v.get("title", "")) == norm_target or _normalize_title(v.get("headline", "")) == norm_target:
+            keys_to_del.append(k)
+    for k in keys_to_del:
+        del data["escalated_incidents"][k]
+        
+    if inc_id in data.get("approved_incidents", []):
+        data["approved_incidents"].remove(inc_id)
+        
+    if inc_id in data.get("rejected_incidents", []):
+        data["rejected_incidents"].remove(inc_id)
+        
+    # Audit trail
+    audit_entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "user": f"Petugas ({actor_role})",
+        "role": actor_role,
+        "action": "PEMBATALAN ESKALASI SOAR",
+        "target": f"{inc_id} ({removed_title[:30]}...)",
+        "status": "DIHAPUS DARI ANTREAN",
+        "hash": f"{inc_id.lower().replace('-', '')}d3e1"
+    }
+    data["audit_logs"].insert(0, audit_entry)
+    save_storage(data)
+
 def get_approved_incidents():
     """Returns set of approved incident IDs."""
     data = load_storage()
@@ -124,6 +169,8 @@ def mark_incident_approved(inc_id, approver_role="Komandan"):
     data = load_storage()
     if inc_id not in data["approved_incidents"]:
         data["approved_incidents"].append(inc_id)
+    if "rejected_incidents" in data and inc_id in data["rejected_incidents"]:
+        data["rejected_incidents"].remove(inc_id)
         
     audit_entry = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
@@ -133,6 +180,53 @@ def mark_incident_approved(inc_id, approver_role="Komandan"):
         "target": inc_id,
         "status": "APPROVED & ENCRYPTED",
         "hash": f"{inc_id.lower().replace('-', '')}99f0"
+    }
+    data["audit_logs"].insert(0, audit_entry)
+    save_storage(data)
+
+def get_rejected_incidents():
+    """Returns set of rejected incident IDs."""
+    data = load_storage()
+    return set(data.get("rejected_incidents", []))
+
+def mark_incident_rejected(inc_id, rejector_role="Komandan"):
+    """Marks an incident as rejected / false positive in persistent storage."""
+    data = load_storage()
+    if "rejected_incidents" not in data:
+        data["rejected_incidents"] = []
+    if inc_id not in data["rejected_incidents"]:
+        data["rejected_incidents"].append(inc_id)
+    if inc_id in data.get("approved_incidents", []):
+        data["approved_incidents"].remove(inc_id)
+        
+    audit_entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "user": f"Kolonel Bambang ({rejector_role})",
+        "role": rejector_role,
+        "action": "PENOLAKAN OTORISASI (REJECT)",
+        "target": inc_id,
+        "status": "DITOLAK / FALSE POSITIVE",
+        "hash": f"{inc_id.lower().replace('-', '')}c4a2"
+    }
+    data["audit_logs"].insert(0, audit_entry)
+    save_storage(data)
+
+def revoke_incident_status(inc_id, actor_role="Komandan"):
+    """Revokes approval or rejection, returning incident to pending review."""
+    data = load_storage()
+    if inc_id in data.get("approved_incidents", []):
+        data["approved_incidents"].remove(inc_id)
+    if inc_id in data.get("rejected_incidents", []):
+        data["rejected_incidents"].remove(inc_id)
+        
+    audit_entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "user": f"Kolonel Bambang ({actor_role})",
+        "role": actor_role,
+        "action": "PENCABUTAN STATUS (REVOKE)",
+        "target": inc_id,
+        "status": "RESET KE PENDING REVIEW",
+        "hash": f"{inc_id.lower().replace('-', '')}b7f3"
     }
     data["audit_logs"].insert(0, audit_entry)
     save_storage(data)
