@@ -25,6 +25,7 @@ from utils.excel_exporter import generate_sna_excel_bytes, generate_sna_clean_cs
 
 def render_threat_graph():
     """Renders the Interactive Pyvis SNA Network Graph, Live Status, and Node Intelligence Panel."""
+    is_live = True
     st.markdown("## 🕸️ GRAF JARINGAN ANCAMAN & ANALISIS SIMPUL (SNA THREAT GRAPH)")
     st.markdown(
         "<p style='color: #94A3B8; font-size: 0.95rem; margin-top: -10px;'>"
