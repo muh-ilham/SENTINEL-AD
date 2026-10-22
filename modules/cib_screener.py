@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+import re
+from datetime import datetime
 from utils.data_generator import generate_cib_synchronized_clusters
 from utils.soar_storage import (
     add_escalated_incident,
