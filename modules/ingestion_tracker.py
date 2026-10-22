@@ -79,50 +79,71 @@ def render_ingestion_tracker():
             unsafe_allow_html=True
         )
         
+        # 4 Ringkasan Metrik Propagasi Lintas Platform
+        m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+        with m_col1:
+            st.metric("Kecepatan Loncatan (Jump Velocity)", "14 Menit", "Inisiasi ➔ X (Super Cepat)", help="Waktu yang dibutuhkan isu dari unggahan pertama di kanal tertutup hingga muncul di linimasa terbuka X (Twitter).")
+        with m_col2:
+            st.metric("Faktor Ledakan Volume", "1 : 154x", "Amplifikasi Botnet", help="Perbandingan volume penonton dari saluran tertutup (1.2K) melonjak menjadi ratusan ribu setelah masuk TikTok & WhatsApp.")
+        with m_col3:
+            st.metric("Titik Kritis Loncatan", "X ➔ TikTok", "Konversi Teks ke Video", help="Fase paling berbahaya di mana narasi teks diubah menjadi video pendek emosional yang memicu viralitas massal.")
+        with m_col4:
+            st.metric("Jendela Emas Intervensi", "< 60 Menit", "Golden Defense Hour", help="Batas waktu ideal bagi tim siber untuk melakukan klarifikasi/takedown sebelum isu menyebar ke WhatsApp grup warga.")
+
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        
         col_sankey, col_stages = st.columns([7, 5])
         
         with col_sankey:
-            st.markdown("#### Diagram Sankey Transmisi Volume & Konversi Platform")
+            st.markdown("#### 🌊 Diagram Sankey Transmisi Volume & Konversi Platform")
+            st.caption("Visualisasi aliran volume konten hoaks berpindah dari kanal rahasia (kiri) menuju ruang publik warga (kanan):")
             
-            # Dynamic Sankey Diagram based on selected incident
-            # Nodes:
-            # 0: Telegram (Origin)
-            # 1: X (Amplifier Botnet)
-            # 2: TikTok (Viral Video Short)
-            # 3: YouTube (Long Opinion)
-            # 4: Media Daring (News Articles)
-            # 5: Organic Public Perception
-            
+            # Dynamic Clean Sankey Diagram with Explicit Coordinates
             node_labels = [
-                f"{curr_inc['root_platform']} (Origin)",
-                "X / Twitter (Bot Amplification)",
-                "TikTok (Short Viral Clips)",
-                "YouTube (Clickbait Discussion)",
-                "Media Daring (Online Aggregator)",
-                "Persepsi Publik & Grup WA"
+                f"1️⃣ {curr_inc['root_platform']}<br>(Kanal Tertutup / Asal)",
+                "2️⃣ X / Twitter<br>(Amplifikasi Bot)",
+                "3️⃣ TikTok & Reels<br>(Klip Video Viral)",
+                "4️⃣ Media Daring<br>(Agregator Berita)",
+                "5️⃣ YouTube<br>(Ulasan Opini)",
+                "6️⃣ Publik & WhatsApp<br>(Persepsi Luas)"
             ]
             
-            node_colors = ["#EF4444", "#06B6D4", "#EC4899", "#F59E0B", "#8B5CF6", "#10B981"]
+            # Explicit left-to-right positioning for clean, readable hierarchy
+            x_coords = [0.01, 0.28, 0.55, 0.55, 0.78, 0.99]
+            y_coords = [0.50, 0.35, 0.15, 0.85, 0.25, 0.55]
+            node_colors = ["#EF4444", "#06B6D4", "#EC4899", "#8B5CF6", "#F59E0B", "#10B981"]
             
-            # Flow links
-            source_indices = [0, 0, 1, 1, 2, 3, 4]
-            target_indices = [1, 2, 2, 4, 3, 5, 5]
+            # Flow links with realistic volume conversions
+            source_indices = [0, 0, 1, 1, 2, 4, 3]
+            target_indices = [1, 2, 2, 3, 4, 5, 5]
             flow_values =    [85, 35, 65, 40, 50, 75, 45]
             
             fig_sankey = go.Figure(data=[go.Sankey(
+                arrangement="snap",
                 node=dict(
-                    pad=18,
-                    thickness=20,
-                    line=dict(color="#0F172A", width=1),
+                    pad=22,
+                    thickness=22,
+                    line=dict(color="#0F172A", width=1.5),
                     label=node_labels,
-                    color=node_colors
+                    x=x_coords,
+                    y=y_coords,
+                    color=node_colors,
+                    hovertemplate='<b>%{label}</b><br>Estimasi Volume: <b>%{value:,} Konten/Sebaran</b><extra></extra>'
                 ),
                 link=dict(
                     source=source_indices,
                     target=target_indices,
                     value=flow_values,
-                    color=["rgba(6, 182, 212, 0.4)", "rgba(236, 72, 153, 0.4)", "rgba(236, 72, 153, 0.5)", 
-                           "rgba(139, 92, 246, 0.4)", "rgba(245, 158, 11, 0.5)", "rgba(16, 185, 129, 0.5)", "rgba(16, 185, 129, 0.5)"]
+                    color=[
+                        "rgba(6, 182, 212, 0.40)",
+                        "rgba(236, 72, 153, 0.35)",
+                        "rgba(236, 72, 153, 0.50)",
+                        "rgba(139, 92, 246, 0.40)",
+                        "rgba(245, 158, 11, 0.50)",
+                        "rgba(16, 185, 129, 0.50)",
+                        "rgba(16, 185, 129, 0.50)"
+                    ],
+                    hovertemplate='Transmisi: <b>%{source.label}</b> ➔ <b>%{target.label}</b><br>Volume Loncatan: <b>%{value:,} Unit Sebaran</b><extra></extra>'
                 )
             )])
             
@@ -130,13 +151,32 @@ def render_ingestion_tracker():
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(family="JetBrains Mono", size=11, color="#F8FAFC"),
-                margin=dict(t=20, b=20, l=10, r=10),
-                height=380
+                margin=dict(t=25, b=20, l=15, r=15),
+                height=390
             )
             st.plotly_chart(fig_sankey, use_container_width=True)
             
+            # Panduan Edukasi Bahasa Awam Membaca Diagram Sankey
+            with st.expander("💡 BAGAIMANA CARA MEMBACA & APA MAKSUD DARI DIAGRAM SANKEY INI? (KLIK UNTUK MEMBACA)", expanded=True):
+                st.markdown(
+                    """
+                    **1. 🌊 Analogi 'Aliran Pipa Corong':**  
+                    Diagram Sankey ini ibarat peta pipa aliran air. **Sisi Kiri (Hulu)** adalah tempat pertama kali hoaks dibuat, dan **Sisi Kanan (Hilir)** adalah tempat hoaks bermuara di masyarakat umum. Semakin tebal pita warna, semakin besar volume konten yang berpindah.
+
+                    **2. 🔄 4 Tahap Loncatan Lintas Media:**  
+                    • **Tahap 1 (Merah - Kiri):** Isu palsu sengaja dilempar di kanal tertutup (Telegram / Darknet) agar dalang aslinya tidak terlacak.  
+                    • **Tahap 2 (Biru Muda):** Pasukan akun botnet menggandakan isu tersebut ke **X (Twitter)** agar masuk daftar trending topic.  
+                    • **Tahap 3 (Pink & Ungu):** Kreator video mengemasnya menjadi video vertikal dramatis di **TikTok & Reels**, sementara portal berita online mulai mengutipnya demi klik/iklan.  
+                    • **Tahap 4 (Hijau - Kanan):** Isu meledak menjadi konsumsi umum dan masuk ke grup-grup **WhatsApp keluarga/warga**.
+
+                    **3. 🛡️ Sasaran Taktis Militer TNI AD:**  
+                    Operasi pertahanan siber harus memotong aliran pipa pada **Tahap 2 (X) atau Tahap 3 (TikTok)** dalam kurun waktu **<60 menit (Golden Hour)** sebelum menyentuh WhatsApp masyarakat agar wibawa institusi dan ketenangan publik tetap terjaga.
+                    """
+                )
+            
         with col_stages:
-            st.markdown("#### Linimasa Tahapan Loncatan (Jump Velocity)")
+            st.markdown("#### ⏱️ Linimasa Tahapan Loncatan (Jump Velocity)")
+            st.caption("Kronologi waktu loncatan dari inisiasi hingga resonansi publik:")
             
             stages = [
                 {
@@ -145,31 +185,35 @@ def render_ingestion_tracker():
                     "actor": "Akun Anonim Darknet / Channel Khusus",
                     "action": "Unggahan perdana audio/dokumen manipulasi.",
                     "audience": "1.2K Views",
-                    "status_color": "#EF4444"
+                    "status_color": "#EF4444",
+                    "latency": "Titik Awal (0 Menit)"
                 },
                 {
                     "stage": "Tahap 2: Amplifikasi X (T+00:14m)",
                     "platform": "X (Twitter)",
                     "actor": "Klaster 48 Akun CIB Terkoordinasi",
-                    "action": "Penyebaran masif dengan tagar #TNIADSiaga1 dan kutipan potongan kalimat.",
+                    "action": "Penyebaran masif dengan tagar provokatif dan potongan narasi.",
                     "audience": "24.5K Impressions",
-                    "status_color": "#F97316"
+                    "status_color": "#06B6D4",
+                    "latency": "+14 Menit Loncatan"
                 },
                 {
                     "stage": "Tahap 3: Visualisasi Viral (T+00:48m)",
                     "platform": "TikTok & IG Reels",
                     "actor": "Akun Agregator Konten Militer",
-                    "action": "Dibuat video format vertikal dengan latar belakang dramatis & teks provokatif.",
+                    "action": "Dibuat video format vertikal dengan latar belakang dramatis & audio synthesizer.",
                     "audience": "185.0K Plays",
-                    "status_color": "#EC4899"
+                    "status_color": "#EC4899",
+                    "latency": "+34 Menit Loncatan"
                 },
                 {
                     "stage": "Tahap 4: Spillover Arus Utama (T+02:15j)",
                     "platform": "Media Online & WhatsApp Group",
-                    "actor": "Portal Berita Clickbait & Komunitas Lokal",
-                    "action": "Muncul artikel spekulasi: 'Beredar Rekaman, Benarkah Ada Ketegangan Baru?'",
+                    "actor": "Portal Berita Clickbait & Komunitas Warga",
+                    "action": "Muncul artikel spekulasi dan diteruskan berantai ke grup percakapan keluarga.",
                     "audience": "Publik Luas / Resonansi Nasional",
-                    "status_color": "#FBBF24"
+                    "status_color": "#10B981",
+                    "latency": "+87 Menit Loncatan"
                 }
             ]
             
@@ -178,19 +222,22 @@ def render_ingestion_tracker():
                 <div style="
                     border-left: 3px solid {stg['status_color']};
                     background: #111C2E;
-                    padding: 8px 12px;
+                    padding: 10px 14px;
                     border-radius: 0 6px 6px 0;
-                    margin-bottom: 8px;
+                    margin-bottom: 10px;
                     font-size: 0.8rem;
                 ">
                     <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.72rem; color: #38BDF8;">
                         <span>{stg['stage']}</span>
-                        <span style="color: {stg['status_color']}; font-weight: bold;">{stg['platform']}</span>
+                        <span style="color: {stg['status_color']}; font-weight: bold; background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 3px;">{stg['platform']}</span>
                     </div>
-                    <div style="font-weight: 600; color: #F8FAFC; margin: 2px 0;">{stg['action']}</div>
-                    <div style="display: flex; justify-content: space-between; color: #94A3B8; font-size: 0.7rem; font-family: 'JetBrains Mono';">
-                        <span>Aktor: {stg['actor']}</span>
-                        <span style="color: #34D399;">Jangkauan: {stg['audience']}</span>
+                    <div style="font-weight: 600; color: #F8FAFC; margin: 4px 0; line-height: 1.4;">{stg['action']}</div>
+                    <div style="display: flex; justify-content: space-between; color: #94A3B8; font-size: 0.72rem; font-family: 'JetBrains Mono'; margin-top: 4px;">
+                        <span>👤 Aktor: {stg['actor']}</span>
+                        <span style="color: #34D399; font-weight: bold;">{stg['audience']}</span>
+                    </div>
+                    <div style="font-size: 0.68rem; color: #F59E0B; font-family: 'JetBrains Mono'; margin-top: 2px;">
+                        ⏱️ Latensi Transmisi: {stg['latency']}
                     </div>
                 </div>
                 """
