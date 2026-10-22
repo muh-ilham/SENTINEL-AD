@@ -254,3 +254,44 @@ def get_audit_logs():
     """Returns all audit logs from persistent storage."""
     data = load_storage()
     return data.get("audit_logs", [])
+
+def save_wargaming_result(record):
+    """Saves verified wargaming narrative result to persistent storage and logs audit."""
+    data = load_storage()
+    data["latest_wargaming_result"] = record
+    if "wargaming_history" not in data:
+        data["wargaming_history"] = []
+    data["wargaming_history"].insert(0, record)
+    
+    # Audit trail
+    audit_entry = {
+        "timestamp": record.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")),
+        "user": record.get("tested_by", "Analis Siber (Pussiberad)"),
+        "role": record.get("tested_by", "Analis Siber (Pussiberad)"),
+        "action": "INTEGRASI WARGAMING SOAR",
+        "target": f"Draf Klarifikasi Dispenad ({record.get('overall_tone', 'Taktis')})",
+        "status": f"SENTIMEN {record.get('positive_sentiment', 86.5)}% / BACKFIRE {record.get('backfire_risk', 11.2)}%",
+        "hash": f"wargaming{datetime.now().strftime('%H%M%S')}a1"
+    }
+    data["audit_logs"].insert(0, audit_entry)
+    save_storage(data)
+
+def get_latest_wargaming_result():
+    """Returns the latest verified wargaming narrative result."""
+    data = load_storage()
+    if "latest_wargaming_result" in data and data["latest_wargaming_result"]:
+        return data["latest_wargaming_result"]
+    return {
+        "draft_text": (
+            "Mabes TNI AD menegaskan rekaman audio yang beredar mengatasnamakan pimpinan TNI AD adalah 100% kloning suara sintetik (AI deepfake) "
+            "yang sengaja disebarkan oleh pihak tidak bertanggung jawab untuk memecah belah persatuan. Tim Pussiberad telah memverifikasi anomali "
+            "frekuensi dan berkas dossier takedown telah dikoordinasikan bersama Kominfo serta BSSN. TNI AD tetap berkomitmen menjaga stabilitas dan kedamaian di perbatasan."
+        ),
+        "positive_sentiment": 86.5,
+        "backfire_risk": 11.2,
+        "overall_tone": "Taktis, Faktual & Kredibel (Sangat Optimal)",
+        "advice": "DIREKOMENDASIKAN. Penggunaan bukti digital forensik dan keterlibatan BSSN/Kominfo melumpuhkan narasi buzzer lawan serta memberikan rasa aman kepada publik awam.",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+        "tested_by": "Pussiberad & Dispenad Sandbox Engine",
+        "passed": True
+    }

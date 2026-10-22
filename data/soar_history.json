@@ -81,5 +81,13 @@
       "hash": "3d1b8e62...45a1"
     }
   ],
-  "rejected_incidents": []
+  "rejected_incidents": [],
+  "latest_wargaming_result": {
+    "draft_text": "Mabes TNI AD menegaskan rekaman dan narasi yang beredar merupakan disinformasi sintetis hasil manipulasi digital. Situasi jajaran teritorial dalam kondisi aman, solid, dan kondusif menjalankan tugas pembinaan masyarakat.",
+    "positive_sentiment": 86.5,
+    "backfire_risk": 11.2,
+    "overall_tone": "Taktis & Kredibel",
+    "simulated_personas": 10
+  },
+  "wargaming_history": []
 }

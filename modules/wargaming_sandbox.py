@@ -5,7 +5,9 @@ Simulates societal, media, hostile, and inter-agency cognitive reactions across 
 
 import streamlit as st
 import random
+from datetime import datetime
 from utils.data_generator import get_multi_agent_personas
+from utils.soar_storage import save_wargaming_result, get_latest_wargaming_result
 
 PRESET_STATEMENTS = {
     "Pilihan 1: Faktual & Transparan dengan Bukti Digital Forensik (Rekomendasi Pussiberad)": (
@@ -285,6 +287,50 @@ def render_wargaming_sandbox():
         """,
         unsafe_allow_html=True
     )
+
+    # 2.5 Action Bar to Commit / Forward to Tactical SOAR
+    st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        col_soar_act, col_soar_stat = st.columns([7, 5])
+        with col_soar_act:
+            is_safe = backfire_risk <= 25.0 and pos_sent >= 70.0
+            btn_color = "primary" if is_safe else "secondary"
+            btn_icon = "📋" if is_safe else "⚠️"
+            if st.button(f"{btn_icon} Sahkan & Teruskan Naskah Ini ke Tactical SOAR", type=btn_color, use_container_width=True, help="Menyimpan naskah ini ke berkas SOAR, Executive SITREP PDF, dan Briefing Dispenad"):
+                now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+                role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+                wargaming_record = {
+                    "draft_text": draft_input,
+                    "positive_sentiment": float(pos_sent),
+                    "backfire_risk": float(backfire_risk),
+                    "overall_tone": tone_title,
+                    "advice": advice,
+                    "timestamp": now_wib,
+                    "tested_by": role_actor,
+                    "preset_title": preset_key,
+                    "passed": is_safe
+                }
+                save_wargaming_result(wargaming_record)
+                st.session_state["latest_wargaming_result"] = wargaming_record
+                if is_safe:
+                    st.toast("Naskah klarifikasi BERHASIL disahkan & disinkronkan ke Tactical SOAR!", icon="✅")
+                else:
+                    st.toast(f"Naskah disimpan ke SOAR dengan catatan risiko tinggi (Backfire {backfire_risk}%)!", icon="⚠️")
+                st.rerun()
+                
+        with col_soar_stat:
+            current_wg = get_latest_wargaming_result()
+            is_wg_match = current_wg.get("draft_text", "").strip() == draft_input.strip()
+            status_text = "🟢 TERSINKRONISASI KE SOAR" if is_wg_match else "🟡 DRAF SEDANG DIUJI (BELUM DISINKRON)"
+            status_border = "#10B981" if is_wg_match else "#F59E0B"
+            st.markdown(
+                f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #CBD5E1; background: #0B1120; border: 1px solid #1E293B; border-left: 3px solid {status_border}; padding: 8px 12px; border-radius: 4px;">
+                <b style="color: {status_border};">{status_text}</b><br/>
+                ⏱️ Waktu Uji: {current_wg.get('timestamp', 'Tersedia Default')}<br/>
+                👉 <i>Buka Modul 'Tactical SOAR & Otorisasi' untuk melihat naskah & cetak SITREP PDF</i>
+                </div>""",
+                unsafe_allow_html=True
+            )
 
     # 3. Grid of 10 Persona Reaction Cards
     st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
