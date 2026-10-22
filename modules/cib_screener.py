@@ -150,6 +150,28 @@ def render_cib_screener():
             
         sub_cib["cumulative_time_sec"] = sub_cib["post_interval_sec"].cumsum()
         
+        # Identifikasi akun-akun yang sudah masuk ke antrean SOAR
+        all_escalations = get_escalated_incidents()
+        escalated_bot_accounts = set()
+        for item in all_escalations.values():
+            if item.get("bot_account"):
+                norm_acc = re.sub(r"[^a-zA-Z0-9]", "", str(item.get("bot_account"))).lower()
+                escalated_bot_accounts.add(norm_acc)
+            for b_acc in item.get("bot_accounts_list", []):
+                norm_acc = re.sub(r"[^a-zA-Z0-9]", "", str(b_acc)).lower()
+                escalated_bot_accounts.add(norm_acc)
+
+        sub_cib["is_soar_queued"] = sub_cib["account"].apply(
+            lambda a: re.sub(r"[^a-zA-Z0-9]", "", str(a)).lower() in escalated_bot_accounts
+        )
+        sub_cib["soar_status_badge"] = sub_cib["is_soar_queued"].apply(
+            lambda q: "🟢 Terdaftar di SOAR" if q else "⚪ Belum Diajukan"
+        )
+        
+        unescalated_sub_cib = sub_cib[~sub_cib["is_soar_queued"]].copy()
+        remaining_takedown_count = len(unescalated_sub_cib)
+        already_takedown_count = len(sub_cib) - remaining_takedown_count
+        
         # Baris Grafik Linimasa & Ringkasan Platform
         col_chart, col_platform = st.columns([7, 5])
         
@@ -229,13 +251,14 @@ def render_cib_screener():
         
         st.dataframe(
             sub_cib[[
-                "platform_icon", "account", "profile_url", "bot_role", 
+                "platform_icon", "account", "soar_status_badge", "profile_url", "bot_role", 
                 "post_interval_sec", "semantic_similarity", "account_age_desc", 
                 "follower_desc", "proxy_ip"
             ]],
             column_config={
                 "platform_icon": st.column_config.TextColumn("Asal Platform", width="medium"),
                 "account": st.column_config.TextColumn("Identitas Akun", width="medium"),
+                "soar_status_badge": st.column_config.TextColumn("Status SOAR", width="medium"),
                 "profile_url": st.column_config.LinkColumn("Tautan Akun Medsos 🔗", display_text="Buka Profil Akun ↗", width="medium"),
                 "bot_role": st.column_config.TextColumn("Peran Botnet", width="medium"),
                 "post_interval_sec": st.column_config.NumberColumn("Jeda Unggah", format="%d detik", width="small"),
@@ -255,10 +278,20 @@ def render_cib_screener():
         st.markdown("#### 🔎 Inspektur Forensik Digital Akun Terdeteksi (Bedah Profil)")
         st.caption("Pilih salah satu dari 13 akun di bawah untuk melihat rincian bukti forensik digital dan narasi hoaks yang disebarkan:")
         
+        def _format_acc_dropdown(x):
+            row_match = sub_cib[sub_cib["account"] == x]
+            if row_match.empty:
+                return str(x)
+            p_icon = row_match["platform_icon"].values[0]
+            b_role = row_match["bot_role"].values[0]
+            is_q = re.sub(r"[^a-zA-Z0-9]", "", str(x)).lower() in escalated_bot_accounts
+            q_badge = " [✓ DI ANTREAN SOAR]" if is_q else ""
+            return f"{p_icon} {x} - {b_role}{q_badge}"
+
         selected_account = st.selectbox(
             "Pilih Akun yang Ingin Dibedah Secara Mendalam:",
             options=list(sub_cib["account"]),
-            format_func=lambda x: f"{sub_cib.loc[sub_cib['account']==x, 'platform_icon'].values[0]} {x} - {sub_cib.loc[sub_cib['account']==x, 'bot_role'].values[0]}"
+            format_func=_format_acc_dropdown
         )
         
         active_user_data = sub_cib[sub_cib["account"] == selected_account].iloc[0]
@@ -375,40 +408,54 @@ def render_cib_screener():
                         st.toast(f"Akun {active_user_data['account']} ({account_inc_id}) berhasil didaftarkan ke antrean Takedown SOAR!", icon="🚨")
                         st.rerun()
 
-        # Operasi Takedown Kolektif (Batch Escalation)
+        # Operasi Takedown Kolektif (Batch Escalation Dinamis)
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         with st.container(border=True):
             col_b1, col_b2 = st.columns([8, 4])
             with col_b1:
-                st.markdown(f"##### ⚡ Operasi Takedown Kolektif ({len(sub_cib)} Akun Bot Sekaligus)")
-                st.caption(f"Mengemas seluruh {len(sub_cib)} akun bot yang terdeteksi di klaster ini menjadi 1 Berkas Dossier Takedown Gabungan untuk langsung diajukan ke BSSN & Kominfo setelah disahkan Komandan.")
-            with col_b2:
-                batch_id = f"TKD-BATCH-CIB-{len(sub_cib)}"
-                batch_alert = {"id": batch_id, "headline": f"Takedown Massal Sindikat Bot CIB ({len(sub_cib)} Akun)"}
-                is_batch_esc, batch_esc_info = check_is_escalated(batch_alert)
-                
-                if is_batch_esc:
-                    st.button("✅ BATCH SUDAH DI-ESKALASI", disabled=True, use_container_width=True)
-                    st.caption("✓ Telah terdaftar di antrean SOAR.")
+                if remaining_takedown_count == 0:
+                    st.markdown(f"##### ⚡ Operasi Takedown Kolektif (Seluruh {len(sub_cib)} Akun Selesai Diantrekan)")
+                    st.caption(f"✓ Seluruh {len(sub_cib)} akun bot dalam klaster ini telah terdaftar di antrean SOAR secara lengkap. Tidak ada akun tersisa untuk dieksekusi massal.")
+                elif already_takedown_count > 0:
+                    st.markdown(f"##### ⚡ Operasi Takedown Kolektif (Sisa {remaining_takedown_count} dari {len(sub_cib)} Akun Bot)")
+                    st.caption(f"ℹ️ **Sinkronisasi Antrean SOAR:** Sebanyak **{already_takedown_count} akun** telah diajukan ke SOAR secara individu. Tombol di samping akan mengemas **{remaining_takedown_count} akun tersisa** menjadi 1 Berkas Dossier Takedown Gabungan untuk langsung diajukan ke BSSN & Kominfo.")
                 else:
-                    if st.button(f"⚡ Ajukan Takedown Massal ({len(sub_cib)} Akun)", key="btn_mass_takedown", type="primary", use_container_width=True):
+                    st.markdown(f"##### ⚡ Operasi Takedown Kolektif ({len(sub_cib)} Akun Bot Sekaligus)")
+                    st.caption(f"Mengemas seluruh {len(sub_cib)} akun bot yang terdeteksi di klaster ini menjadi 1 Berkas Dossier Takedown Gabungan untuk langsung diajukan ke BSSN & Kominfo setelah disahkan Komandan.")
+
+            with col_b2:
+                if remaining_takedown_count == 0:
+                    st.button(f"✅ SELURUH {len(sub_cib)} AKUN SUDAH DI-ESKALASI", disabled=True, use_container_width=True)
+                    st.markdown(
+                        f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 4px; margin-top: 4px;">
+                        ✓ <b>STATUS:</b> 100% TERDAFTAR DI SOAR ({len(sub_cib)} Akun)<br/>
+                        👉 <i>Buka Modul 'Tactical SOAR & Otorisasi' untuk pengesahan Komandan</i>
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
+                else:
+                    batch_id = f"TKD-BATCH-CIB-{remaining_takedown_count}"
+                    btn_label = f"⚡ Ajukan Takedown Massal ({remaining_takedown_count} Akun Tersisa)" if already_takedown_count > 0 else f"⚡ Ajukan Takedown Massal ({len(sub_cib)} Akun)"
+                    if st.button(btn_label, key=f"btn_mass_takedown_{remaining_takedown_count}", type="primary", use_container_width=True):
                         now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
                         role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
-                        bot_list_str = ", ".join([str(r["account"]) for _, r in sub_cib.iterrows()])
+                        bot_list_str = ", ".join([str(r["account"]) for _, r in unescalated_sub_cib.iterrows()])
+                        followers_sum = int(unescalated_sub_cib["followers"].sum()) if "followers" in unescalated_sub_cib.columns else 120
+                        batch_title = f"Permohonan Takedown Massal: Sindikat CIB {remaining_takedown_count} Akun Tersisa" if already_takedown_count > 0 else f"Permohonan Takedown Massal: Sindikat CIB {len(sub_cib)} Akun Lintas Medsos"
                         batch_record = {
                             "id": batch_id,
-                            "title": f"Permohonan Takedown Massal: Sindikat CIB {len(sub_cib)} Akun Lintas Medsos",
-                            "headline": f"Takedown Massal Sindikat Bot CIB ({len(sub_cib)} Akun)",
-                            "sample_text": f"Paket permohonan takedown massal {len(sub_cib)} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
-                            "text": f"Paket permohonan takedown massal {len(sub_cib)} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
+                            "title": batch_title,
+                            "headline": f"Takedown Massal Sindikat Bot CIB ({remaining_takedown_count} Akun)",
+                            "sample_text": f"Paket permohonan takedown massal {remaining_takedown_count} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
+                            "text": f"Paket permohonan takedown massal {remaining_takedown_count} akun botnet terkoordinasi (CIB) lintas platform (TikTok, X, Instagram, Facebook, YouTube). Daftar sasaran: {bot_list_str}. Bukti telemetri hash MD5 dan rekaman server TOR terlampir.",
                             "platform": "Lintas Medsos (Multi-Platform)",
                             "root_platform": "Multi-Platform",
                             "level": "Kritis",
                             "threat_level": "Kritis",
                             "target_kodam": "Mabes TNI AD / Kominfo BSSN",
                             "kodam": "Mabes TNI AD / Kominfo BSSN",
-                            "cib_cluster_size": len(sub_cib),
-                            "amplification_nodes": int(sub_cib["followers"].sum()) if "followers" in sub_cib.columns else 120,
+                            "cib_cluster_size": remaining_takedown_count,
+                            "amplification_nodes": followers_sum,
                             "virality_score": 98,
                             "cib_probability": 97,
                             "shares_count": 50000,
@@ -416,13 +463,13 @@ def render_cib_screener():
                             "escalated_by": role_actor,
                             "is_from_radar": True,
                             "is_from_cib": True,
-                            "bot_accounts_list": [str(r["account"]) for _, r in sub_cib.iterrows()]
+                            "bot_accounts_list": [str(r["account"]) for _, r in unescalated_sub_cib.iterrows()]
                         }
                         add_escalated_incident(batch_record)
                         st.session_state["approved_incidents"] = get_approved_incidents()
                         st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
                         st.session_state["audit_logs"] = get_audit_logs()
-                        st.toast(f"Seluruh {len(sub_cib)} akun berhasil didaftarkan ke paket Takedown SOAR!", icon="⚡")
+                        st.toast(f"{remaining_takedown_count} akun berhasil didaftarkan ke paket Takedown SOAR!", icon="⚡")
                         st.rerun()
 
         # Forensic Conclusion Box
