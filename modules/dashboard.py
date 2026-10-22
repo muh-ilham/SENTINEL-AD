@@ -10,6 +10,7 @@ from streamlit_folium import st_folium
 import plotly.express as px
 import plotly.graph_objects as go
 import math
+from datetime import datetime
 from utils.theme import render_metric_card
 from utils.data_generator import generate_threat_feed, generate_kodam_geo_summary, KODAM_REGIONS
 
@@ -468,8 +469,80 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                         )
                     with col_act_right:
                         st.markdown("**Aksi Cepat Pengambil Keputusan:**")
-                        if st.button(f"🚨 Eskalasikan ke SOAR ({alert['id']})", key=f"soar_btn_{alert['id']}", type="primary", use_container_width=True):
-                            st.toast(f"Insiden {alert['id']} berhasil dimasukkan ke Antrean Persetujuan SOAR!", icon="🛡️")
+                        
+                        # Initialize SOAR escalated queue in session_state
+                        if "escalated_soar_incidents" not in st.session_state:
+                            st.session_state["escalated_soar_incidents"] = {}
+                            
+                        is_escalated = alert["id"] in st.session_state["escalated_soar_incidents"]
+                        
+                        if is_escalated:
+                            esc_info = st.session_state["escalated_soar_incidents"][alert["id"]]
+                            st.button(
+                                f"✅ TELAH DIESKALASIKAN KE SOAR",
+                                key=f"soar_btn_{alert['id']}_done",
+                                disabled=True,
+                                use_container_width=True
+                            )
+                            st.markdown(
+                                f"""
+                                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 8px; border-radius: 4px; margin: 4px 0 8px 0;">
+                                    ✓ <b>STATUS:</b> DIESKALASI KE SOAR<br/>
+                                    ⏱ <b>Waktu:</b> {esc_info.get('escalated_at', 'Baru saja')}<br/>
+                                    👤 <b>Oleh:</b> {esc_info.get('escalated_by', current_role)}
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            if st.button(f"🚨 Eskalasikan ke SOAR ({alert['id']})", key=f"soar_btn_{alert['id']}", type="primary", use_container_width=True):
+                                now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+                                role_actor = st.session_state.get("active_role", current_role)
+                                
+                                # Package into standardized SOAR incident payload
+                                soar_payload = {
+                                    "id": alert["id"],
+                                    "title": alert["headline"],
+                                    "headline": alert["headline"],
+                                    "category": f"Deteksi Radar {alert.get('platform', 'Medsos')} / Operasi Disinformasi",
+                                    "level": alert["threat_level"],
+                                    "threat_level": alert["threat_level"],
+                                    "root_platform": alert.get("platform", "Media Daring"),
+                                    "platform": alert.get("platform", "Media Daring"),
+                                    "jump_sequence": [alert.get("platform", "Media Daring"), "X (Twitter)", "Media Daring"],
+                                    "target_kodam": alert["kodam"],
+                                    "kodam": alert["kodam"],
+                                    "cib_cluster_size": int(alert.get("amplification_nodes", 28)),
+                                    "amplification_nodes": int(alert.get("amplification_nodes", 28)),
+                                    "sample_text": alert.get("text", alert["headline"]),
+                                    "text": alert.get("text", alert["headline"]),
+                                    "sentiment": alert.get("sentiment_score", -0.72),
+                                    "sentiment_score": alert.get("sentiment_score", -0.72),
+                                    "virality_score": alert.get("virality_score", 85),
+                                    "cib_probability": alert.get("cib_probability", 80),
+                                    "shares_count": alert.get("shares_count", 3200),
+                                    "author": alert.get("author", "Akun Publik"),
+                                    "link": alert.get("link", ""),
+                                    "escalated_at": now_wib,
+                                    "escalated_by": role_actor,
+                                    "is_from_radar": True
+                                }
+                                st.session_state["escalated_soar_incidents"][alert["id"]] = soar_payload
+                                
+                                # Register event in cryptographic audit logs
+                                if "audit_logs" not in st.session_state:
+                                    st.session_state["audit_logs"] = []
+                                st.session_state["audit_logs"].insert(0, {
+                                    "timestamp": now_wib,
+                                    "user": role_actor,
+                                    "role": role_actor,
+                                    "action": "ESKALASI KE SOAR",
+                                    "target": f"{alert['id']} - {alert['headline'][:35]}...",
+                                    "status": "MENUNGGU OTORISASI KOMANDAN",
+                                    "hash": f"{alert['id'].lower().replace('-', '')}e8a1"
+                                })
+                                st.toast(f"Insiden {alert['id']} berhasil dimasukkan ke Antrean Persetujuan SOAR!", icon="🛡️")
+                                st.rerun()
                             
                         # If there is a real online link from live OSINT
                         link_url = alert.get("link")

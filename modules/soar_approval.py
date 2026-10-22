@@ -36,6 +36,19 @@ def init_audit_logs():
         
     if "approved_incidents" not in st.session_state:
         st.session_state["approved_incidents"] = set()
+        
+    if "escalated_soar_incidents" not in st.session_state:
+        st.session_state["escalated_soar_incidents"] = {}
+
+def get_all_soar_incidents():
+    """Returns combined list of dynamically escalated incidents from C2 Radar + baseline incidents."""
+    escalated_dict = st.session_state.get("escalated_soar_incidents", {})
+    escalated_items = list(escalated_dict.values())
+    
+    # Combined with PRIMARY_INCIDENTS avoiding duplicate IDs
+    existing_ids = {item["id"] for item in escalated_items}
+    combined = escalated_items + [inc for inc in PRIMARY_INCIDENTS if inc["id"] not in existing_ids]
+    return combined
 
 def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
     """Renders the Tactical SOAR & RBAC Approval Command Center."""
@@ -65,14 +78,19 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             "Dossier Takedown BSSN/Kominfo, Executive SITREP Dokumen Resmi PDF, dan Brief Cek Fakta Media."
         )
         
-        inc_options = {inc["id"]: f"[{inc['level'].upper()}] {inc['title']}" for inc in PRIMARY_INCIDENTS}
+        all_incidents = get_all_soar_incidents()
+        inc_options = {}
+        for inc in all_incidents:
+            radar_prefix = "📡 [LIVE C2] " if inc.get("is_from_radar") else ""
+            inc_options[inc["id"]] = f"{radar_prefix}[{inc.get('level', inc.get('threat_level', 'KRITIS')).upper()}] {inc['title']}"
+            
         selected_inc_id = st.selectbox(
             "Pilih Insiden Ancaman untuk Dibuatkan Paket Penanggulangan:",
             options=list(inc_options.keys()),
             format_func=lambda x: inc_options[x]
         )
         
-        active_inc = next(item for item in PRIMARY_INCIDENTS if item["id"] == selected_inc_id)
+        active_inc = next(item for item in all_incidents if item["id"] == selected_inc_id)
         is_approved = selected_inc_id in st.session_state["approved_incidents"]
         
         col_summary, col_downloads = st.columns([7, 5])
@@ -107,13 +125,22 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             
             # Fact-Checking Infographic Brief
             st.markdown("#### 📢 Materi Briefing Komunikasi Publik Dispenad")
-            brief_text = f"""
-            **Poin Kunci Cek Fakta (Talking Points Dispenad):**
-            1. **Fakta 1:** Panglima TNI AD tidak pernah mengeluarkan instruksi suara tersebut.
-            2. **Fakta 2:** Analisis laboratorium Pussiberad memastikan audio 94.2% diproduksi oleh software AI Voice Synthesizer.
-            3. **Fakta 3:** Kondisi teritorial jajaran Kodam terkait saat ini dalam situasi aman, damai, dan solid bersama masyarakat.
-            4. **Visual Guideline:** Publikasikan infografis 'Side-by-Side Debunk' mencantumkan watermark resmi DISPENAD.
-            """
+            if active_inc.get("is_from_radar"):
+                brief_text = f"""
+                **Poin Kunci Cek Fakta & Tindak Lanjut Dispenad/Pussiberad:**
+                1. **Fakta 1:** Narasi mengenai "{active_inc.get('headline', active_inc['title'])}" terindikasi sebagai disinformasi/hoaks manipulatif.
+                2. **Fakta 2:** Analisis laboratorium intelijen siber mencatat probabilitas botnet/CIB sebesar {active_inc.get('cib_probability', 80)}% dengan viralitas {active_inc.get('virality_score', 85)}/100 pada platform {active_inc.get('platform', 'Media')}.
+                3. **Fakta 3:** Situasi satuan jajaran teritorial ({active_inc.get('target_kodam', active_inc.get('kodam', 'TNI AD'))}) dalam kondisi aman, solid, dan kondusif.
+                4. **Visual Guideline:** Terbitkan rilis infografis berstempel resmi 'DISPENAD KLARIFIKASI' untuk menetralkan isu.
+                """
+            else:
+                brief_text = f"""
+                **Poin Kunci Cek Fakta (Talking Points Dispenad):**
+                1. **Fakta 1:** Panglima TNI AD tidak pernah mengeluarkan instruksi suara tersebut.
+                2. **Fakta 2:** Analisis laboratorium Pussiberad memastikan audio 94.2% diproduksi oleh software AI Voice Synthesizer.
+                3. **Fakta 3:** Kondisi teritorial jajaran Kodam terkait saat ini dalam situasi aman, damai, dan solid bersama masyarakat.
+                4. **Visual Guideline:** Publikasikan infografis 'Side-by-Side Debunk' mencantumkan watermark resmi DISPENAD.
+                """
             st.info(brief_text)
 
         with col_downloads:
@@ -200,16 +227,20 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         
         with col_approval_left:
             st.markdown("#### Daftar Antrean Permohonan Otorisasi SOAR")
+            all_incidents = get_all_soar_incidents()
             
-            for inc in PRIMARY_INCIDENTS:
+            for inc in all_incidents:
                 inc_id = inc["id"]
                 already_approved = inc_id in st.session_state["approved_incidents"]
                 btn_disabled = already_approved or ("Komandan" not in current_role)
+                is_from_radar = inc.get("is_from_radar", False)
                 
                 with st.container():
+                    radar_tag_html = f"<div style='font-family: JetBrains Mono; font-size: 0.68rem; color: #22D3EE; margin-bottom: 2px;'>📡 ESKALASI LANGSUNG DARI RADAR C2 ({inc.get('platform', 'Medsos')}) • {inc.get('escalated_at', 'Baru saja')}</div>" if is_from_radar else ""
                     st.markdown(
                         f"""
                         <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {'#10B981' if already_approved else '#EF4444'}; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                            {radar_tag_html}
                             <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.72rem;">
                                 <span style="color: #38BDF8;">{inc_id}</span>
                                 <span style="color: {'#10B981' if already_approved else '#F59E0B'}; font-weight: bold;">
@@ -217,7 +248,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                                 </span>
                             </div>
                             <div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc['title']}</div>
-                            <div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{inc['level']}</b> | Yurisdiksi: {inc['target_kodam']}</div>
+                            <div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{inc.get('level', inc.get('threat_level', 'Kritis'))}</b> | Yurisdiksi: {inc.get('target_kodam', inc.get('kodam', 'Mabesad'))}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
