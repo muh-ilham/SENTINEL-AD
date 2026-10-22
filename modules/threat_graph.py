@@ -21,6 +21,7 @@ from utils.soar_storage import (
     get_approved_incidents,
     get_audit_logs
 )
+from utils.excel_exporter import generate_sna_excel_bytes, generate_sna_clean_csv_bytes
 
 def render_threat_graph():
     """Renders the Interactive Pyvis SNA Network Graph, Live Status, and Node Intelligence Panel."""
@@ -310,50 +311,69 @@ def render_threat_graph():
     }
     json_bytes = json.dumps(topology_export, indent=2, ensure_ascii=False).encode("utf-8")
     
-    # Prepare CSV Matrix
-    csv_rows = []
-    for n in nodes_data:
-        csv_rows.append({
-            "Node ID": n["id"],
-            "Label": n["label"],
-            "Kategori": n["group"],
-            "Platform": n.get("platform", "Multi-Platform"),
-            "Degree (Koneksi)": degree_dict.get(n["id"], 0),
-            "Betweenness Centrality": round(betweenness_dict.get(n["id"], 0.0), 3),
-            "Profil Aktivitas": n["info"]
-        })
-    df_nodes = pd.DataFrame(csv_rows)
-    csv_bytes = df_nodes.to_csv(index=False).encode("utf-8")
+    # Prepare Formatted Excel (.xlsx) and Clean CSV (.csv)
+    now_ts = datetime.now().strftime("%Y%m%d_%H%M")
+    xlsx_bytes = generate_sna_excel_bytes(
+        nodes_data=nodes_data,
+        edges_data=edges_data,
+        degree_dict=degree_dict,
+        betweenness_dict=betweenness_dict,
+        is_live=is_live,
+        operator_role=st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+    )
+    clean_csv_bytes = generate_sna_clean_csv_bytes(
+        nodes_data=nodes_data,
+        degree_dict=degree_dict,
+        betweenness_dict=betweenness_dict
+    )
     
-    e_col1, e_col2, e_col3 = st.columns([4, 4, 4])
+    e_col1, e_col2, e_col3 = st.columns([4.2, 3.8, 4])
     with e_col1:
         st.download_button(
-            "📄 Unduh Laporan Topologi SNA (JSON Dossier)",
+            "📗 Unduh Matriks Simpul Resmi (Excel .XLSX)",
+            data=xlsx_bytes,
+            file_name=f"SNA_Matriks_Simpul_Resmi_{now_ts}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+            use_container_width=True
+        )
+        st.caption("✨ **Format Excel Resmi:** Langsung rapih, kolom terpisah rapi, header warna, badge peran & auto-fit lebar kolom.")
+    with e_col2:
+        st.download_button(
+            "📄 Unduh Topologi (JSON Dossier)",
             data=json_bytes,
-            file_name=f"SNA_Topologi_Dossier_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+            file_name=f"SNA_Topologi_Dossier_{now_ts}.json",
             mime="application/json",
             use_container_width=True
         )
         st.caption("Format pertukaran data standar BSSN, CSIRT & Kominfo.")
-    with e_col2:
+    with e_col3:
         st.download_button(
-            "📊 Unduh Matriks Simpul Ancaman (CSV)",
-            data=csv_bytes,
-            file_name=f"SNA_Matriks_Simpul_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            "📊 Unduh CSV (Kompatibel Excel Windows)",
+            data=clean_csv_bytes,
+            file_name=f"SNA_Matriks_Simpul_{now_ts}.csv",
             mime="text/csv",
             use_container_width=True
         )
-        st.caption("Tabel data lengkap simpul dan metrik centrality.")
-    with e_col3:
-        st.markdown(
-            """
-            <div style="background: #0B1120; border: 1px solid #1E293B; border-left: 3px solid #06B6D4; padding: 10px 14px; border-radius: 4px;">
-                <b style="color: #38BDF8; font-size: 0.82rem;">🔗 Integrasi Dokumen SOAR & SITREP:</b><br/>
-                <span style="font-size: 0.75rem; color: #94A3B8;">
-                    Simpul yang ditambahkan ke SOAR secara otomatis disertakan ke dalam <b>Executive SITREP Resmi (PDF)</b> dan <b>Takedown Dossier (JSON)</b> setelah disahkan Komandan.
+        st.caption("Pemisah titik koma (;) & UTF-8 BOM agar tidak menumpuk di Kolom A saat dibuka di Excel.")
+
+    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="background: #0B1120; border: 1px solid #1E293B; border-left: 4px solid #10B981; padding: 12px 16px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <b style="color: #34D399; font-size: 0.85rem;">💡 Solusi Tampilan Excel Rapih & Elegan:</b><br/>
+                <span style="font-size: 0.78rem; color: #94A3B8;">
+                    Gunakan tombol hijau <b>📗 Unduh Matriks Simpul Resmi (Excel .XLSX)</b> untuk membuka dokumen langsung dengan tata letak profesional militer (kolom terbagi rapi, warna kategori, dan tanpa peringatan data loss).
                 </span>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+            <div style="text-align: right; padding-left: 12px;">
+                <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; background: #064E3B; color: #A7F3D0; padding: 3px 8px; border-radius: 4px; border: 1px solid #059669;">
+                    EXCEL OPTIMIZED (.XLSX)
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
