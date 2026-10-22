@@ -209,9 +209,10 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             # Opsi Hapus Antrean SOAR langsung dari Tab 1
             if active_inc.get("is_from_radar") or active_inc.get("id") in get_escalated_incidents():
                 st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-                with st.expander("⚙️ Manajemen Antrean Insiden"):
-                    st.caption("Menghapus insiden ini dari antrean SOAR dan mengaktifkan kembali tombol eskalasi di Radar C2:")
-                    if st.button("🗑️ Batalkan & Hapus dari Antrean SOAR", key=f"del_tab1_{inc_id}", use_container_width=True):
+                with st.container(border=True):
+                    st.markdown("##### ⚙️ Manajemen Antrean SOAR (Pembatalan Eskalasi)")
+                    st.caption("Menghapus insiden ini dari antrean SOAR dan mengaktifkan kembali tombol 'Eskalasikan ke SOAR' di Radar C2:")
+                    if st.button("🗑️ Batalkan & Hapus dari Antrean SOAR", key=f"del_tab1_{inc_id}", type="secondary", use_container_width=True):
                         remove_escalated_incident(inc_id, current_role)
                         st.session_state["approved_incidents"] = get_approved_incidents()
                         st.session_state["rejected_incidents"] = get_rejected_incidents()
@@ -230,14 +231,24 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             "yang berhak memberikan otorisasi penindakan, menolak false positive, mencabut otorisasi, atau membubuhkan tanda tangan kriptografis."
         )
         
-        # Display Current Active Role
+        is_commander = "Komandan" in current_role
+        role_border_color = "#10B981" if is_commander else "#38BDF8"
+        role_desc_text = "✅ **Hak Akses Penuh:** Anda berwenang Menyetujui (Digital Signature), Menolak (Reject FP), dan Mencabut Izin (Revoke)." if is_commander else "ℹ️ **Peran Analis/Staf:** Anda dapat memantau antrean dan membatalkan/menghapus eskalasi. Untuk menandatangani persetujuan atau menolak insiden, silakan ubah peran di sidebar kiri menjadi **'Perwira Menengah / Komandan'**."
+        
+        # Display Current Active Role with Context & Build Badge
         st.markdown(
             f"""
-            <div style="background: #0B1120; border: 1px solid #334155; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px;">
-                <span style="font-family: 'JetBrains Mono'; font-size: 0.78rem; color: #94A3B8;">PERAN PENGGUNA SAAT INI:</span>
-                <span style="font-family: 'Chakra Petch'; font-size: 1.15rem; font-weight: bold; color: #22D3EE; margin-left: 10px;">
-                    {current_role}
-                </span>
+            <div style="background: #0B1120; border: 1px solid #334155; border-left: 4px solid {role_border_color}; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 0.78rem; color: #94A3B8;">PERAN PENGGUNA SAAT INI:</span>
+                        <span style="font-family: 'Chakra Petch'; font-size: 1.15rem; font-weight: bold; color: #22D3EE; margin-left: 10px;">
+                            {current_role}
+                        </span>
+                    </div>
+                    <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">BUILD v2.5.2-LIVE (ACTIVE)</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #CBD5E1; margin-top: 8px; line-height: 1.4;">{role_desc_text}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -272,8 +283,6 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 
             if not filtered_incidents:
                 st.info(f"Tidak ada antrean insiden dengan status '{status_filter}'.")
-            
-            is_commander = "Komandan" in current_role
             
             for inc in filtered_incidents:
                 inc_id = inc["id"]
@@ -360,11 +369,11 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                                     st.toast(f"Insiden {inc_id} ditolak sebagai False Positive.", icon="⛔")
                                     st.rerun()
                         else:
-                            st.caption("🔒 Tombol otorisasi terkunci. Pindah ke peran 'Perwira Menengah / Komandan' di sidebar untuk menandatangani atau menolak.")
+                            st.caption("🔒 Otorisasi terkunci. Pindah ke peran 'Perwira Menengah / Komandan' di sidebar untuk menandatangani atau menolak.")
                     
                     # Tombol Batalkan Eskalasi / Hapus Antrean untuk insiden radar atau eskalasi dinamis
                     if is_from_radar or inc_id in get_escalated_incidents():
-                        if st.button(f"🗑️ Batalkan & Hapus dari Antrean ({inc_id})", key=f"del_queue_{inc_id}"):
+                        if st.button(f"🗑️ Batalkan & Hapus dari Antrean SOAR ({inc_id})", key=f"del_queue_{inc_id}", type="secondary", use_container_width=True):
                             remove_escalated_incident(inc_id, current_role)
                             st.session_state["approved_incidents"] = get_approved_incidents()
                             st.session_state["rejected_incidents"] = get_rejected_incidents()
