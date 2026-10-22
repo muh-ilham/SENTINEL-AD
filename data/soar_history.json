@@ -4,10 +4,22 @@
       "id": "LIVE-261022-101",
       "title": "KODIM 1603/SIKKA FASILITASI PEMBINAAN FISIK CALON PRAJURIT TNI AD",
       "headline": "KODIM 1603/SIKKA FASILITASI PEMBINAAN FISIK CALON PRAJURIT TNI AD",
+      "sample_text": "Deteksi Radar TikTok: Kodim 1603/Sikka Fasilitasi Pembinaan Fisik Calon Prajurit TNI AD. Sumber / Kanal: Akun Publik TikTok.",
+      "text": "Deteksi Radar TikTok: Kodim 1603/Sikka Fasilitasi Pembinaan Fisik Calon Prajurit TNI AD. Sumber / Kanal: Akun Publik TikTok.",
       "platform": "TikTok",
+      "root_platform": "TikTok",
       "level": "Tinggi",
+      "threat_level": "Tinggi",
+      "target_kodam": "Kodam IX/Udayana",
+      "kodam": "Kodam IX/Udayana",
+      "cib_cluster_size": 38,
+      "amplification_nodes": 38,
+      "virality_score": 88,
+      "cib_probability": 73,
+      "shares_count": 3500,
       "escalated_at": "2026-10-22 08:16:32 WIB",
-      "escalated_by": "Analis Siber (Pussiberad)"
+      "escalated_by": "Analis Siber (Pussiberad)",
+      "is_from_radar": true
     }
   },
   "approved_incidents": [

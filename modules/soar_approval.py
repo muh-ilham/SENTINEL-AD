@@ -80,6 +80,10 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
         active_inc = next(item for item in all_incidents if item["id"] == selected_inc_id)
         is_approved = selected_inc_id in st.session_state["approved_incidents"]
         
+        inc_id = active_inc.get('id', 'INC-SOAR')
+        inc_title = active_inc.get('title', active_inc.get('headline', 'Insiden Ancaman Siber'))
+        inc_desc = active_inc.get('sample_text', active_inc.get('text', active_inc.get('headline', 'Deteksi intelijen siber terkonfirmasi.')))
+        
         col_summary, col_downloads = st.columns([7, 5])
         
         with col_summary:
@@ -91,11 +95,11 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             
             card_html = f"""<div class="tactical-card" style="border-left: 3px solid {status_color}; padding: 16px; margin-bottom: 15px;">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #38BDF8;">REGISTER: SOAR/{active_inc['id']}/TNI-AD</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #38BDF8;">REGISTER: SOAR/{inc_id}/TNI-AD</span>
 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: {status_color}; font-weight: bold; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid {status_color};">{status_text}</span>
 </div>
-<h4 style="margin: 0 0 6px 0; color: #FFFFFF; font-family: 'Chakra Petch', sans-serif;">{active_inc['title']}</h4>
-<p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 10px; line-height: 1.4;">{active_inc['sample_text']}</p>
+<h4 style="margin: 0 0 6px 0; color: #FFFFFF; font-family: 'Chakra Petch', sans-serif;">{inc_title}</h4>
+<p style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 10px; line-height: 1.4;">{inc_desc}</p>
 <div style="background: #0B1120; padding: 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #94A3B8;">
 <div style="margin-bottom: 3px;">• Yurisdiksi: <b style="color: #F8FAFC;">{target_kodam_val}</b></div>
 <div style="margin-bottom: 3px;">• Klaster Akun Sasaran Takedown: <b style="color: #EF4444;">{cib_cluster_val} Akun Bot Terverifikasi</b></div>
@@ -109,9 +113,9 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             if active_inc.get("is_from_radar"):
                 brief_text = f"""
                 **Poin Kunci Cek Fakta & Tindak Lanjut Dispenad/Pussiberad:**
-                1. **Fakta 1:** Narasi mengenai "{active_inc.get('headline', active_inc['title'])}" terindikasi sebagai disinformasi/hoaks manipulatif.
+                1. **Fakta 1:** Narasi mengenai "{inc_title}" terindikasi sebagai disinformasi/hoaks manipulatif.
                 2. **Fakta 2:** Analisis laboratorium intelijen siber mencatat probabilitas botnet/CIB sebesar {active_inc.get('cib_probability', 80)}% dengan viralitas {active_inc.get('virality_score', 85)}/100 pada platform {active_inc.get('platform', 'Media')}.
-                3. **Fakta 3:** Situasi satuan jajaran teritorial ({active_inc.get('target_kodam', active_inc.get('kodam', 'TNI AD'))}) dalam kondisi aman, solid, dan kondusif.
+                3. **Fakta 3:** Situasi satuan jajaran teritorial ({target_kodam_val}) dalam kondisi aman, solid, dan kondusif.
                 4. **Visual Guideline:** Terbitkan rilis infografis berstempel resmi 'DISPENAD KLARIFIKASI' untuk menetralkan isu.
                 """
             else:
@@ -137,7 +141,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             st.download_button(
                 label="📄 Unduh Executive SITREP Resmi (PDF Standar Militer)",
                 data=pdf_bytes,
-                file_name=f"SITREP_{active_inc['id']}_TNI_AD.pdf",
+                file_name=f"SITREP_{inc_id}_TNI_AD.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -147,7 +151,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
             st.download_button(
                 label="⚡ Unduh Takedown Dossier (JSON Standar BSSN/Kominfo)",
                 data=json_str,
-                file_name=f"TAKEDOWN_DOSSIER_{active_inc['id']}_BSSN.json",
+                file_name=f"TAKEDOWN_DOSSIER_{inc_id}_BSSN.json",
                 mime="application/json",
                 use_container_width=True
             )
@@ -170,13 +174,13 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                 if not is_approved:
                     st.warning("⚠️ Perhatian: Paket SOAR belum disetujui secara digital oleh Komandan. Hanya paket berstatus 'Approved' yang dapat dikirim otomatis.")
                 else:
-                    st.success(f"✅ Berhasil ditransmisikan ke BSSN Gateway! Tiket ID: #BSSN-TKD-{active_inc['id']}")
+                    st.success(f"✅ Berhasil ditransmisikan ke BSSN Gateway! Tiket ID: #BSSN-TKD-{inc_id}")
                     st.session_state["audit_logs"].insert(0, {
                         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
                         "user": current_role,
                         "role": current_role,
                         "action": "TRANSMISI DOSSIER BSSN",
-                        "target": active_inc["id"],
+                        "target": inc_id,
                         "status": "TERKIRIM INTER-AGENCY",
                         "hash": "a4c7e190...77b2"
                     })
@@ -223,6 +227,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
                     card_border_color = "#10B981" if already_approved else "#EF4444"
                     card_level = inc.get('level', inc.get('threat_level', 'Kritis'))
                     card_kodam = inc.get('target_kodam', inc.get('kodam', 'Mabesad'))
+                    inc_title = inc.get('title', inc.get('headline', 'Insiden Ancaman'))
                     
                     card_tab2 = f"""<div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {card_border_color}; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
 {radar_tag_html}
@@ -230,7 +235,7 @@ def render_soar_approval(current_role="Analis Siber (Pussiberad)"):
 <span style="color: #38BDF8;">{inc_id}</span>
 <span style="color: {approval_status_color}; font-weight: bold;">{approval_status_text}</span>
 </div>
-<div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc['title']}</div>
+<div style="font-weight: 600; color: #FFFFFF; font-size: 0.88rem; margin: 4px 0;">{inc_title}</div>
 <div style="font-size: 0.78rem; color: #94A3B8;">Tingkat: <b style="color: #EF4444;">{card_level}</b> | Yurisdiksi: {card_kodam}</div>
 </div>"""
                     st.markdown(card_tab2, unsafe_allow_html=True)
