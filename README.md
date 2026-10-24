@@ -7,6 +7,10 @@
 [![Target](https://img.shields.io/badge/USER-PUSSIBERAD%20%C3%97%20DISPENAD%20TNI%20AD-10B981?style=for-the-badge)]()
 [![Security](https://img.shields.io/badge/SECURITY-MILNET%20AIR--GAPPED%20READY-38BDF8?style=for-the-badge)]()
 
+<p align="center">
+  <img src="THUMBNAIL_SENTINEL_AD.jpg" alt="SENTINEL-AD Official Thumbnail" width="100%" style="border-radius: 8px; border: 1px solid #1E293B;" />
+</p>
+
 ---
 
 ## 📌 Ringkasan Eksekutif (Executive Summary)
