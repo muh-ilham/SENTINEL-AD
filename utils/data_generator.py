@@ -236,10 +236,16 @@ def generate_threat_feed(n=50, seed=42):
     df = df.sort_values(by="datetime", ascending=False).reset_index(drop=True)
     return df
 
-def generate_kodam_geo_summary():
-    """Generates summarized threat metrics per Kodam for geospatial map."""
+def generate_kodam_geo_summary(feed_df=None):
+    """Generates summarized threat metrics per Kodam for geospatial map, strictly synchronized with active feed."""
     geo_data = []
-    feed = generate_threat_feed(80)
+    
+    if feed_df is not None and not feed_df.empty:
+        feed = feed_df
+    elif st.session_state.get("data_source_mode") == "live" and "live_feed_cache" in st.session_state and st.session_state["live_feed_cache"] is not None and not st.session_state["live_feed_cache"].empty:
+        feed = st.session_state["live_feed_cache"]
+    else:
+        feed = generate_threat_feed(80)
     
     for kodam_name, coords in KODAM_REGIONS.items():
         kodam_threats = feed[feed["kodam"] == kodam_name]
@@ -248,13 +254,13 @@ def generate_kodam_geo_summary():
         high_count = len(kodam_threats[kodam_threats["threat_level"] == "Tinggi"])
         avg_cib = round(kodam_threats["cib_probability"].mean(), 1) if total_threats > 0 else 0
         
-        top_incident = kodam_threats.iloc[0]["headline"] if total_threats > 0 else "Nihil Anomali Signifikan"
+        top_incident = kodam_threats.iloc[0]["headline"] if total_threats > 0 else "Nihil Anomali Signifikan (Situasi Wilayah Kondusif)"
         
-        # Color coding for markers
-        if critical_count > 1 or total_threats >= 8:
+        # Color coding for markers: Kritis -> Merah, Waspada/Tinggi -> Kuning, Kondusif -> Hijau
+        if critical_count >= 1 or total_threats >= 5:
             color = "#EF4444"  # Red
             status_desc = "STATUS: MERAH (Waspada Penuh)"
-        elif high_count >= 1 or total_threats >= 4:
+        elif high_count >= 1 or total_threats >= 2:
             color = "#F59E0B"  # Yellow/Orange
             status_desc = "STATUS: KUNING (Pemantauan Aktif)"
         else:

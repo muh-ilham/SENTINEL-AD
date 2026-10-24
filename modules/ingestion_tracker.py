@@ -25,11 +25,11 @@ def render_ingestion_tracker():
         unsafe_allow_html=True
     )
     
-    # Tabs: Feed Monitoring vs Narrative Jump Analysis vs Kodam XIV Focus
+    # Tabs: Feed Monitoring vs Narrative Jump Analysis vs Kodam Territorial Focus
     tab_jump, tab_feed, tab_hasanuddin = st.tabs([
         "🚀 VISUALISASI NARRATIVE JUMP", 
         "📋 STREAM UMPAN ANCAMAN REAL-TIME", 
-        "📍 RADAR KHUSUS KODAM XIV/HASANUDDIN (LIVE DATA)"
+        "📍 RADAR MONITORING 27 KODAM (LIVE DATA)"
     ])
     
     feed_df = generate_threat_feed(70)
@@ -326,34 +326,53 @@ def render_ingestion_tracker():
     # TAB 3: RADAR KHUSUS KODAM XIV/HASANUDDIN (LIVE DATA)
     # -------------------------------------------------------------
     with tab_hasanuddin:
-        st.markdown("### 📍 MONITORING INTELIJEN SIBER & MEDIA SOSIAL KODAM XIV/HASANUDDIN")
+        st.markdown("### 📍 MONITORING INTELIJEN SIBER & MEDIA SOSIAL SATUAN TERITORIAL KODAM")
         st.markdown(
             "<p style='color: #94A3B8; font-size: 0.9rem; margin-top: -8px;'>"
-            "Pemantauan terintegrasi media daring resmi dan percakapan media sosial di wilayah Sulawesi Selatan, Sulawesi Barat, dan Sulawesi Tenggara (Makassar)."
+            "Pemantauan terintegrasi percakapan media sosial (TikTok, Instagram, X, Facebook, YouTube, Media Daring) di 27 Komando Daerah Militer se-Indonesia."
             "</p>",
             unsafe_allow_html=True
         )
         
-        # Kodam XIV Profile Card
+        c_sel_k, c_sync_k = st.columns([8, 4])
+        with c_sel_k:
+            selected_deep_kodam = st.selectbox(
+                "Pilih Wilayah Kodam Teritorial (27 Kodam):",
+                options=list(KODAM_REGIONS.keys()),
+                index=list(KODAM_REGIONS.keys()).index("Kodam XIV/Hasanuddin") if "Kodam XIV/Hasanuddin" in KODAM_REGIONS else 0,
+                key="tracker_deep_kodam_sel"
+            )
+        with c_sync_k:
+            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("📡 Sinkronkan Telemetri Satuan", type="primary", use_container_width=True, key="btn_sync_deep_kodam"):
+                st.session_state["live_feed_cache"] = None
+                st.toast(f"Telemetri intelijen teritorial {selected_deep_kodam} berhasil disinkronkan!", icon="📍")
+                st.rerun()
+
+        k_info = KODAM_REGIONS.get(selected_deep_kodam, {})
+        k_abbr = k_info.get("abbr", "KODAM")
+        k_hq = k_info.get("hq", "Indonesia")
+        k_prov = k_info.get("province", "Teritorial")
+
+        # Kodam Profile Card
         st.markdown(
-            """
+            f"""
             <div style="background: linear-gradient(135deg, #111C2E 0%, #0F172A 100%); border: 1px solid #334155; border-left: 4px solid #06B6D4; padding: 14px 18px; border-radius: 6px; margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                     <span style="font-family: 'Chakra Petch'; font-size: 1.15rem; font-weight: bold; color: #FFFFFF;">
-                        KOMANDO DAERAH MILITER XIV/HASANUDDIN
+                        KOMANDO DAERAH MILITER {selected_deep_kodam.upper()} [{k_abbr}]
                     </span>
                     <span style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: #10B981; background: rgba(16,185,129,0.15); border: 1px solid #10B981; padding: 2px 8px; border-radius: 12px; font-weight: bold;">
-                        STATUS: TERKONEKSI LIVE
+                        STATUS: TERKONEKSI SENSOR LIVE
                     </span>
                 </div>
                 <div style="font-size: 0.82rem; color: #94A3B8; margin-bottom: 8px;">
-                    Motto: <b style="color: #22D3EE;">"SETIA HINGGA AKHIR"</b> | Markas: <b>Jl. Urip Sumoharjo Km. 9, Panaikang, Panakkukang, Makassar</b>
+                    Wilayah Pertahanan: <b style="color: #22D3EE;">{k_prov}</b> | Markas Komando: <b>{k_hq}</b>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 14px; font-family: 'JetBrains Mono'; font-size: 0.74rem;">
-                    <span style="color: #CBD5E1;">🌐 Portal: <a href="https://kodam14hasanuddin.tni-ad.mil.id" target="_blank" style="color: #38BDF8; text-decoration: none;">kodam14hasanuddin.tni-ad.mil.id</a></span>
-                    <span style="color: #CBD5E1;">📸 Instagram: <b style="color: #E2E8F0;">@kodam.hasanuddin</b></span>
-                    <span style="color: #CBD5E1;">▶️ YouTube: <b style="color: #E2E8F0;">@kodamhasanuddin1799</b></span>
-                    <span style="color: #CBD5E1;">⚔️ Jajaran Korem: <b style="color: #F59E0B;">141/Toddopuli • 142/Tatag • 143/Haluoleo</b></span>
+                    <span style="color: #CBD5E1;">🌐 Yurisdiksi: <b style="color: #38BDF8;">Pangdam & Danrem Jajaran</b></span>
+                    <span style="color: #CBD5E1;">📡 Radar: <b style="color: #E2E8F0;">TikTok, IG, X, FB, YT, Media Daring</b></span>
+                    <span style="color: #CBD5E1;">⚔️ Gelar Pasukan: <b style="color: #F59E0B;">Korem • Kodim • Koramil • Babinsa</b></span>
                 </div>
             </div>
             """,
@@ -361,83 +380,134 @@ def render_ingestion_tracker():
         )
         
         col_real_news, col_social_track = st.columns([7, 5])
+        kodam_threats = feed_df[feed_df["kodam"] == selected_deep_kodam]
         
         with col_real_news:
-            st.markdown("#### 📰 Rilis Berita & Kegiatan Terkini Satuan (Live Feed Kodam XIV)")
+            st.markdown(f"#### 📰 Telemetri Isu Teritorial ({selected_deep_kodam})")
             
-            real_articles = [
-                {
-                    "title": "HUT ke-81 TNI Digelar Sederhana, 1.992 Prajurit Tiga Matra Teguhkan Soliditas dan Empati",
-                    "date": "05 Oktober 2026",
-                    "author": "Operator Kodam XIV Hasanuddin",
-                    "category": "Operasional & Soliditas Tiga Matra",
-                    "summary": "Peringatan HUT TNI ke-81 dipusatkan di Makassar melibatkan ribuan prajurit TNI AD, AL, dan AU dengan fokus peneguhan empati kemasyarakatan dan stabilitas wilayah."
-                },
-                {
-                    "title": "Terima Kunjungan Deputi Geoekonomi DPN, Pangdam XIV/Hasanuddin Dukung Ketahanan Nasional",
-                    "date": "30 September 2026",
-                    "author": "Operator Kodam XIV Hasanuddin",
-                    "category": "Geoekonomi & Ketahanan Pangan",
-                    "summary": "Pangdam Mayjen TNI menerima audiensi penguatan ketahanan pangan strategis dan integrasi logistik teritorial di koridor Sulawesi Selatan dan Tenggara."
-                },
-                {
-                    "title": "Atlet Pentathlon Kodam Hasanuddin Ukir Prestasi Gemilang, Juara 1 Umum Piala Panglima TNI",
-                    "date": "30 September 2026",
-                    "author": "Operator Kodam XIV Hasanuddin",
-                    "category": "Prestasi Prajurit",
-                    "summary": "Kontingen Kodam XIV/Hasanuddin menyabet gelar juara umum pada kejuaraan militer nasional, meningkatkan moril dan citra positif matra darat."
-                },
-                {
-                    "title": "Napak Tilas Patriotisme di Monumen Mandala, Pangdam XIV/Hsn Kobarkan Semangat Juang",
-                    "date": "29 September 2026",
-                    "author": "Operator Kodam XIV Hasanuddin",
-                    "category": "Komunikasi Sejarah & Publik",
-                    "summary": "Edukasi sejarah perjuangan pembebasan Irian Barat (Operasi Mandala) kepada generasi muda di Kota Makassar untuk menangkal radikalisme kognitif."
-                }
-            ]
-            
-            for art in real_articles:
-                card_html = f"""
-                <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid #38BDF8; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #94A3B8; margin-bottom: 2px;">
-                        <span>📅 {art['date']} • {art['author']}</span>
-                        <span style="color: #38BDF8; font-weight: bold;">{art['category']}</span>
+            if not kodam_threats.empty:
+                for _, row in kodam_threats.iterrows():
+                    th_color = "#EF4444" if row["threat_level"] == "Kritis" else ("#F59E0B" if row["threat_level"] == "Tinggi" else "#38BDF8")
+                    card_html = f"""
+                    <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {th_color}; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #94A3B8; margin-bottom: 2px;">
+                            <span>🕒 {row['timestamp'][:19]} • {row['platform']}</span>
+                            <span style="color: {th_color}; font-weight: bold;">{row['threat_level']} (CIB: {row['cib_probability']}%)</span>
+                        </div>
+                        <div style="font-weight: 700; color: #F8FAFC; font-size: 0.85rem; margin-bottom: 4px;">{row['headline']}</div>
+                        <div style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.35;">{row['text']}</div>
                     </div>
-                    <div style="font-weight: 700; color: #F8FAFC; font-size: 0.85rem; margin-bottom: 4px;">{art['title']}</div>
-                    <div style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.35;">{art['summary']}</div>
-                </div>
-                """
-                st.markdown(card_html, unsafe_allow_html=True)
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
+            elif selected_deep_kodam == "Kodam XIV/Hasanuddin":
+                real_articles = [
+                    {
+                        "title": "HUT ke-81 TNI Digelar Sederhana, 1.992 Prajurit Tiga Matra Teguhkan Soliditas dan Empati",
+                        "date": "05 Oktober 2026",
+                        "author": "Operator Kodam XIV Hasanuddin",
+                        "category": "Operasional & Soliditas Tiga Matra",
+                        "summary": "Peringatan HUT TNI ke-81 dipusatkan di Makassar melibatkan ribuan prajurit TNI AD, AL, dan AU dengan fokus peneguhan empati kemasyarakatan dan stabilitas wilayah."
+                    },
+                    {
+                        "title": "Terima Kunjungan Deputi Geoekonomi DPN, Pangdam XIV/Hasanuddin Dukung Ketahanan Nasional",
+                        "date": "30 September 2026",
+                        "author": "Operator Kodam XIV Hasanuddin",
+                        "category": "Geoekonomi & Ketahanan Pangan",
+                        "summary": "Pangdam Mayjen TNI menerima audiensi penguatan ketahanan pangan strategis dan integrasi logistik teritorial di koridor Sulawesi Selatan dan Tenggara."
+                    },
+                    {
+                        "title": "Atlet Pentathlon Kodam Hasanuddin Ukir Prestasi Gemilang, Juara 1 Umum Piala Panglima TNI",
+                        "date": "30 September 2026",
+                        "author": "Operator Kodam XIV Hasanuddin",
+                        "category": "Prestasi Prajurit",
+                        "summary": "Kontingen Kodam XIV/Hasanuddin menyabet gelar juara umum pada kejuaraan militer nasional, meningkatkan moril dan citra positif matra darat."
+                    }
+                ]
+                for art in real_articles:
+                    card_html = f"""
+                    <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid #38BDF8; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #94A3B8; margin-bottom: 2px;">
+                            <span>📅 {art['date']} • {art['author']}</span>
+                            <span style="color: #38BDF8; font-weight: bold;">{art['category']}</span>
+                        </div>
+                        <div style="font-weight: 700; color: #F8FAFC; font-size: 0.85rem; margin-bottom: 4px;">{art['title']}</div>
+                        <div style="font-size: 0.78rem; color: #CBD5E1; line-height: 1.35;">{art['summary']}</div>
+                    </div>
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
+            else:
+                st.markdown(
+                    f"""
+                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid #10B981; border-radius: 6px; padding: 16px; text-align: center;">
+                        <span style="font-size: 1.5rem;">🟢</span>
+                        <div style="font-family: 'Chakra Petch'; color: #10B981; font-weight: bold; font-size: 0.95rem; margin-top: 4px;">
+                            WILAYAH TERITORIAL KONDUSIF
+                        </div>
+                        <p style="font-size: 0.8rem; color: #94A3B8; margin: 6px 0 0 0;">
+                            Sensor intelijen siber tidak mendeteksi ancaman kognitif aktif yang menargetkan yurisdiksi <b>{selected_deep_kodam}</b> pada rentang 24 jam terakhir. Jajaran Korem, Kodim, dan Babinsa dalam status siaga stabil.
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
                 
         with col_social_track:
-            st.markdown("#### 🔍 Sinyal & Radar Medsos Makassar / Sulsel")
+            st.markdown(f"#### 🔍 Sinyal & Radar Medsos Satuan ({k_abbr})")
             
-            social_signals = [
-                {
-                    "platform": "TikTok & Reels",
-                    "handle": "@lensa.makassar.update",
-                    "issue": "Video Apel Prajurit Yonif 726/Tamalatea",
-                    "risk": "Sedang (Perlu Pemantauan)",
-                    "note": "Netizen membagikan ulang video apel dengan audio dramatis. Sentimen publik 85% positif bangga TNI, 15% bertanya-tanya kesiapsiagaan.",
-                    "color": "#F59E0B"
-                },
-                {
-                    "platform": "X (Twitter)",
-                    "handle": "@suara_celebes_44",
-                    "issue": "Diskusi Ketahanan Pangan Babinsa Sulsel",
-                    "risk": "Aman (Organik)",
-                    "note": "Apresiasi warga Gowa dan Maros terhadap pendampingan Babinsa pada panen raya padi.",
-                    "color": "#10B981"
-                },
-                {
-                    "platform": "YouTube",
-                    "handle": "Channel Kabar Makassar 24",
-                    "issue": "Liputan Baksos Pomdam XIV Bagi Masker",
-                    "risk": "Positif Kognitif",
-                    "note": "Telah ditonton 18K kali. Respon warga sangat positif terhadap aksi sosial prajurit Kodam di jalanan protokol Makassar.",
-                    "color": "#10B981"
-                }
-            ]
+            if selected_deep_kodam == "Kodam XIV/Hasanuddin":
+                social_signals = [
+                    {
+                        "platform": "TikTok & Reels",
+                        "handle": "@lensa.makassar.update",
+                        "issue": "Video Apel Prajurit Yonif 726/Tamalatea",
+                        "risk": "Sedang (Perlu Pemantauan)",
+                        "note": "Netizen membagikan ulang video apel dengan audio dramatis. Sentimen publik 85% positif bangga TNI, 15% bertanya-tanya kesiapsiagaan.",
+                        "color": "#F59E0B"
+                    },
+                    {
+                        "platform": "X (Twitter)",
+                        "handle": "@suara_celebes_44",
+                        "issue": "Diskusi Ketahanan Pangan Babinsa Sulsel",
+                        "risk": "Aman (Organik)",
+                        "note": "Apresiasi warga Gowa dan Maros terhadap pendampingan Babinsa pada panen raya padi.",
+                        "color": "#10B981"
+                    },
+                    {
+                        "platform": "YouTube",
+                        "handle": "Channel Kabar Makassar 24",
+                        "issue": "Liputan Baksos Pomdam XIV Bagi Masker",
+                        "risk": "Positif Kognitif",
+                        "note": "Telah ditonton 18K kali. Respon warga sangat positif terhadap aksi sosial prajurit Kodam di jalanan protokol Makassar.",
+                        "color": "#10B981"
+                    }
+                ]
+            else:
+                social_signals = [
+                    {
+                        "platform": "TikTok & Reels",
+                        "handle": f"@lensa.{k_abbr.lower().replace('/', '_')}.update",
+                        "issue": f"Patroli Wilayah Korem & Kodim Jajaran {k_abbr}",
+                        "risk": "Kondusif (Aman)",
+                        "note": f"Monitoring respon masyarakat terhadap kehadiran pos teritorial {selected_deep_kodam}.",
+                        "color": "#10B981"
+                    },
+                    {
+                        "platform": "X (Twitter)",
+                        "handle": f"@suara_warga_{k_abbr.lower().replace('/', '_')}",
+                        "issue": f"Program Bakti Babinsa & Ketahanan Teritorial {k_prov}",
+                        "risk": "Organik / Netral",
+                        "note": "Percakapan warganet didominasi apresiasi kegiatan kemanunggalan TNI dan rakyat.",
+                        "color": "#10B981"
+                    },
+                    {
+                        "platform": "Media Daring",
+                        "handle": f"Radar Teritorial {k_abbr}",
+                        "issue": f"Publikasi Kegiatan Forkopimda & Kodam di {k_hq.split(',')[0]}",
+                        "risk": "Informasi Resmi",
+                        "note": "Pemberitaan netral dan positif mendukung soliditas jajaran forkopimda daerah.",
+                        "color": "#38BDF8"
+                    }
+                ]
             
             for sig in social_signals:
                 sig_html = f"""
@@ -453,6 +523,8 @@ def render_ingestion_tracker():
                 st.markdown(sig_html, unsafe_allow_html=True)
                 
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-            if st.button("📡 Sinkronkan Telemetri Live Media Sosial Kodam XIV/Hasanuddin", type="primary", use_container_width=True):
-                st.toast("Telemetri satelit media sosial Kodam XIV/Hasanuddin berhasil disinkronkan!", icon="📍")
+            if st.button(f"📡 Sinkronkan Telemetri Live {selected_deep_kodam}", type="secondary", use_container_width=True, key="btn_sync_kodam_bottom"):
+                st.session_state["live_feed_cache"] = None
+                st.toast(f"Telemetri satelit media sosial {selected_deep_kodam} berhasil disinkronkan!", icon="📍")
+                st.rerun()
 

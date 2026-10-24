@@ -17,22 +17,40 @@ import html
 import concurrent.futures
 import streamlit as st
 
-# Defense Keywords and Regional Kodam Mapping
+# Defense Keywords and Regional Kodam Mapping (27 Kodam TNI AD - Renstra Satu Provinsi Satu Kodam)
 KODAM_KEYWORDS = {
-    "Kodam XIV/Hasanuddin": ["makassar", "hasanuddin", "sulsel", "sulawesi selatan", "sulbar", "sultra", "kendari", "mamuju", "palopo", "gowa", "bone", "maros", "parepare"],
-    "Kodam Jaya/Jayakarta": ["jakarta", "jaya", "cijantung", "mabesad", "kodam jaya", "monas", "gambir", "bekasi", "depok", "tangerang"],
-    "Kodam XVII/Cenderawasih": ["papua", "jayapura", "cenderawasih", "timika", "merauke", "intan jaya", "puncak jaya", "wamena"],
-    "Kodam XVIII/Kasuari": ["manokwari", "kasuari", "papua barat", "sorong", "fakfak", "raja ampat"],
-    "Kodam I/Bukit Barisan": ["medan", "bukit barisan", "sumut", "riau", "pekanbaru", "sumatera utara", "nias", "asahan", "deli"],
-    "Kodam II/Sriwijaya": ["palembang", "sriwijaya", "sumsel", "bengkulu", "jambi", "lampung", "bangka"],
-    "Kodam III/Siliwangi": ["bandung", "siliwangi", "jabar", "jawa barat", "bogor", "banten", "cirebon", "sukabumi"],
-    "Kodam IV/Diponegoro": ["semarang", "diponegoro", "jateng", "jawa tengah", "solo", "yogyakarta", "magelang", "banyumas"],
-    "Kodam V/Brawijaya": ["surabaya", "brawijaya", "jatim", "jawa timur", "malang", "madiun", "banyuwangi", "kediri"],
-    "Kodam VI/Mulawarman": ["balikpapan", "mulawarman", "kaltim", "ikn", "kaltara", "kalteng", "samarinda", "tarakan"],
-    "Kodam IX/Udayana": ["bali", "denpasar", "udayana", "ntt", "ntb", "kupang", "mataram", "ttu", "atambua", "sumba"],
-    "Kodam XII/Tanjungpura": ["pontianak", "tanjungpura", "kalbar", "singkawang", "sintang"],
-    "Kodam XIII/Merdeka": ["manado", "merdeka", "sulut", "gorontalo", "palu", "sulteng", "poso"],
-    "Kodam XVI/Pattimura": ["ambon", "pattimura", "maluku", "ternate", "tidore", "halmahera"]
+    # 15 Kodam Awal & Utama
+    "Kodam Iskandar Muda (IM)": ["aceh", "banda aceh", "lhokseumawe", "sabang", "meulaboh", "pidie", "bireuen", "gayo lues", "iskandar muda", "kodam im"],
+    "Kodam I/Bukit Barisan": ["medan", "bukit barisan", "sumut", "sumatera utara", "nias", "asahan", "deli serdang", "karo", "simalungun", "pematang siantar", "tapanuli", "binjai"],
+    "Kodam II/Sriwijaya": ["palembang", "sriwijaya", "sumsel", "sumatera selatan", "bangka", "belitung", "pangkalpinang", "ogan ilir", "lahat", "lubuklinggau", "prabumulih", "muara enim"],
+    "Kodam Jayakarta (Kodam Jaya)": ["jakarta", "kodam jaya", "jayakarta", "cijantung", "mabesad", "monas", "gambir", "bekasi", "depok", "tangerang", "matraman", "cililitan"],
+    "Kodam III/Siliwangi": ["bandung", "siliwangi", "jabar", "jawa barat", "bogor", "banten", "serang", "cirebon", "sukabumi", "karawang", "tasikmalaya", "garut", "purwakarta", "lebak", "pandeglang", "cilegon"],
+    "Kodam IV/Diponegoro": ["semarang", "diponegoro", "jateng", "jawa tengah", "solo", "surakarta", "magelang", "banyumas", "purwokerto", "cilacap", "kudus", "pekalongan", "tegal", "brebes", "salatiga", "akmil"],
+    "Kodam V/Brawijaya": ["surabaya", "brawijaya", "jatim", "jawa timur", "malang", "madiun", "banyuwangi", "kediri", "jember", "sidoarjo", "gresik", "madura", "pamekasan", "tuban", "blitar"],
+    "Kodam VI/Mulawarman": ["balikpapan", "mulawarman", "kaltim", "kalimantan timur", "ikn", "nusantara", "kaltara", "kalimantan utara", "samarinda", "tarakan", "nunukan", "penajam", "bontang", "kutai", "bulungan"],
+    "Kodam IX/Udayana": ["bali", "denpasar", "udayana", "badung", "buleleng", "gianyar", "tabanan", "klungkung", "bangli", "karangasem", "jembrana", "kuta", "sanur"],
+    "Kodam XII/Tanjungpura": ["pontianak", "tanjungpura", "kalbar", "kalimantan barat", "singkawang", "sintang", "kubu raya", "sambas", "ketapang", "kapuas hulu", "sanggau", "entikong"],
+    "Kodam XIII/Merdeka": ["manado", "merdeka", "sulut", "sulawesi utara", "gorontalo", "bitung", "tomohon", "minahasa", "kotamobagu", "bone bolango", "pohuwato", "sangihe", "talaud"],
+    "Kodam XIV/Hasanuddin": ["makassar", "hasanuddin", "sulsel", "sulawesi selatan", "gowa", "bone", "maros", "parepare", "palopo", "jeneponto", "bulukumba", "toraja", "bantaeng", "pangkep", "barru", "wajo", "soppeng", "luwu"],
+    "Kodam XV/Pattimura": ["ambon", "pattimura", "maluku", "seram", "buru", "maluku tengah", "maluku tenggara", "tanimbar", "aru", "masohi", "saumlaki", "tual"],
+    "Kodam XVII/Cenderawasih": ["jayapura", "cenderawasih", "papua", "papua pegunungan", "keerom", "sarmi", "wamena", "jayawijaya", "yahukimo", "pegunungan bintang", "tolikara", "lanny jaya"],
+    "Kodam XVIII/Kasuari": ["manokwari", "kasuari", "papua barat", "papua barat daya", "sorong", "fakfak", "raja ampat", "kaimana", "teluk bintuni", "wondama", "maybrat", "tambrauw"],
+
+    # 6 Kodam Baru Diresmikan 2025 (Pemekaran Strategis Tahap I)
+    "Kodam XIX/Tuanku Tambusai": ["riau", "pekanbaru", "dumai", "kampar", "indragiri", "siak", "rokan", "bengkalis", "pelalawan", "kuansing", "meranti", "tuanku tambusai", "tambusai"],
+    "Kodam XX/Tuanku Imam Bonjol": ["sumbar", "sumatera barat", "padang", "bukittinggi", "payakumbuh", "pariaman", "solok", "agam", "pasaman", "tanah datar", "jambi", "kerinci", "sungai penuh", "muaro jambi", "batanghari", "bungo", "merangin", "sarolangun", "imam bonjol"],
+    "Kodam XXI/Radin Inten": ["lampung", "bandar lampung", "metro", "lampung selatan", "lampung tengah", "lampung utara", "tulang bawang", "pringsewu", "pesawaran", "bengkulu", "rejang lebong", "curup", "mukomuko", "radin inten"],
+    "Kodam XXII/Tambun Bungai": ["kalteng", "kalimantan tengah", "palangka raya", "palangkaraya", "kotawaringin", "sampit", "pangkalan bun", "kapuas kalteng", "barito", "kalsel", "kalimantan selatan", "banjarmasin", "banjarbaru", "martapura", "tabalong", "kotabaru", "tambun bungai"],
+    "Kodam XXIII/Palaka Wira": ["sulteng", "sulawesi tengah", "palu", "poso", "tolitoli", "banggai", "luwuk", "morowali", "donggala", "parigi", "sulbar", "sulawesi barat", "mamuju", "majene", "polewali", "polman", "pasangkayu", "palaka wira"],
+    "Kodam XXIV/Mandala Trikora": ["papua selatan", "merauke", "boven digoel", "mappi", "asmat", "sota", "mandala trikora"],
+
+    # 6 Kodam Baru Diresmikan 2026 (Pemekaran Strategis Tahap II)
+    "Kodam XXV/Sultan Mahmud Riayatsyah": ["kepri", "kepulauan riau", "batam", "tanjungpinang", "bintan", "karimun", "natuna", "anambas", "ranai", "selat malaka", "sultan mahmud riayatsyah", "riayatsyah"],
+    "Kodam XXVI/Mataram": ["yogyakarta", "jogja", "diy", "d.i. yogyakarta", "sleman", "bantul", "gunungkidul", "kulon progo", "keraton", "malioboro"],
+    "Kodam XXVII/Sobe Sonbai": ["ntt", "nusa tenggara timur", "kupang", "flores", "timor", "belu", "atambua", "sumba", "rote", "alor", "manggarai", "ende", "maumere", "sobe sonbai"],
+    "Kodam XXVIII/Moloku Kie Raha": ["malut", "maluku utara", "ternate", "tidore", "sofifi", "halmahera", "morotai", "sula", "moloku kie raha", "kie raha"],
+    "Kodam XXIX/Mambruk": ["papua tengah", "nabire", "mimika", "timika", "puncak jaya", "paniai", "deiyai", "dogiyai", "intan jaya", "tembagapura", "mambruk"],
+    "Kodam XXX/Rinambora": ["ntb", "nusa tenggara barat", "mataram ntb", "lombok", "sumbawa", "bima", "dompu", "mandalika", "praya", "rinambora"]
 }
 
 HIGH_RISK_TERMS = [

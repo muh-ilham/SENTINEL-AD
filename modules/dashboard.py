@@ -27,7 +27,7 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
     
     # Load Telemetry Data
     feed_df = generate_threat_feed(60)
-    geo_df = generate_kodam_geo_summary()
+    geo_df = generate_kodam_geo_summary(feed_df=feed_df)
     is_live = st.session_state.get("data_source_mode") == "live"
     active_count = len(feed_df)
     critical_count = len(feed_df[feed_df["threat_level"].isin(["Kritis", "Tinggi"])])
@@ -140,25 +140,122 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                 
             st_folium(m, width=None, height=480, returned_objects=[])
 
-            # Tactical Quick Status Bar directly under the map
-            crit_kodams = geo_df[geo_df["critical_count"] > 0]
+            # Synchronized Territorial Calculations across all 27 Kodam
+            crit_kodams = geo_df[geo_df["marker_color"] == "#EF4444"]
             crit_count = len(crit_kodams)
-            high_kodams = geo_df[geo_df["high_count"] > 0]
+            high_kodams = geo_df[geo_df["marker_color"] == "#F59E0B"]
+            high_count = len(high_kodams)
+            safe_kodams = geo_df[geo_df["marker_color"] == "#10B981"]
+            safe_count = len(safe_kodams)
+            crit_names = ", ".join(crit_kodams["abbr"].tolist()) if crit_count > 0 else "Nihil"
             
+            # Tactical Quick Status Bar directly under the map
             with st.container(border=True):
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
                     st.caption("🌐 **KODAM TERPANTAU**")
-                    st.markdown(f"<span style='font-family: JetBrains Mono; color: #38BDF8; font-weight: bold;'>{len(geo_df)} Komando Daerah</span>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<div style='font-family: JetBrains Mono; font-weight: bold; font-size: 1.05rem; color: #38BDF8;'>"
+                        f"{len(geo_df)} Komando Daerah"
+                        f"</div>"
+                        f"<div style='font-size: 0.72rem; color: #94A3B8; margin-top: 2px;'>"
+                        f"15 Kodam Awal • 12 Kodam Baru (Renstra)"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
                 with m_c2:
-                    st.caption("⚠️ **SEKTOR RAWAN**")
-                    if crit_count > 0:
-                        st.markdown(f"<span style='font-family: JetBrains Mono; color: #EF4444; font-weight: bold;'>{crit_count} Sektor Kritis</span>", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"<span style='font-family: JetBrains Mono; color: #F59E0B; font-weight: bold;'>{len(high_kodams)} Sektor Atensi</span>", unsafe_allow_html=True)
+                    st.caption("⚠️ **SEKTOR RAWAN & WASPADA**")
+                    rawan_color = "#EF4444" if crit_count > 0 else ("#F59E0B" if high_count > 0 else "#10B981")
+                    rawan_title = f"{crit_count} Sektor Kritis" if crit_count > 0 else (f"{high_count} Sektor Atensi" if high_count > 0 else "Seluruh Sektor Kondusif")
+                    rincian_sub = f"Mendesak: [{crit_names}]" if crit_count > 0 else (f"{high_count} Sektor Waspada" if high_count > 0 else "Zero Alert Anomaly")
+                    st.markdown(
+                        f"<div style='font-family: JetBrains Mono; font-weight: bold; font-size: 1.05rem; color: {rawan_color};'>"
+                        f"{rawan_title}"
+                        f"</div>"
+                        f"<div style='font-size: 0.72rem; color: #94A3B8; margin-top: 2px;'>"
+                        f"{rincian_sub}"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
                 with m_c3:
-                    st.caption("📡 **TELEMETRI GEOINT**")
-                    st.markdown("<span style='font-family: JetBrains Mono; color: #10B981; font-weight: bold;'>AKTIF • 18ms Latency</span>", unsafe_allow_html=True)
+                    st.caption("📡 **TELEMETRI GEOINT (SYNC OSINT)**")
+                    st.markdown(
+                        "<div style='font-family: JetBrains Mono; font-weight: bold; font-size: 1.05rem; color: #10B981;'>"
+                        "AKTIF • 18ms Latency"
+                        "</div>"
+                        "<div style='font-size: 0.72rem; color: #94A3B8; margin-top: 2px;'>"
+                        "TikTok • IG • X • FB • YT • Media Daring"
+                        "</div>",
+                        unsafe_allow_html=True
+                    )
+
+            # Tactical Color Legend & Breakdown Panel
+            with st.container(border=True):
+                st.markdown(
+                    "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
+                    "<span style='font-family: Chakra Petch, sans-serif; font-size: 0.85rem; font-weight: bold; color: #E2E8F0; letter-spacing: 0.5px;'>"
+                    "🏷️ PANDUAN INDIKATOR WARNA GEOINT & DISTRIBUSI SITUASI KODAM"
+                    "</span>"
+                    f"<span style='font-family: JetBrains Mono; font-size: 0.75rem; color: #38BDF8; background: rgba(56,189,248,0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.3);'>"
+                    f"TOTAL: {len(geo_df)} KODAM"
+                    "</span>"
+                    "</div>",
+                    unsafe_allow_html=True
+                )
+                
+                leg_col1, leg_col2, leg_col3 = st.columns(3)
+                with leg_col1:
+                    st.markdown(
+                        f"""
+                        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid #EF4444; border-left: 4px solid #EF4444; border-radius: 6px; padding: 8px 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <b style="color: #EF4444; font-size: 0.82rem;">🔴 MERAH (KRITIS)</b>
+                                <span style="font-family: 'JetBrains Mono'; font-weight: bold; color: #EF4444; font-size: 0.85rem;">{crit_count} Kodam</span>
+                            </div>
+                            <p style="margin: 4px 0 0 0; font-size: 0.73rem; color: #CBD5E1; line-height: 1.35;">
+                                <b>Waspada Penuh:</b> Terdeteksi isu Kritis, serangan bot CIB masif, atau eskalasi separatisme/hoaks berskala tinggi. Butuh aksi SOAR segera.
+                            </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                with leg_col2:
+                    st.markdown(
+                        f"""
+                        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid #F59E0B; border-left: 4px solid #F59E0B; border-radius: 6px; padding: 8px 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <b style="color: #F59E0B; font-size: 0.82rem;">🟡 KUNING (WASPADA)</b>
+                                <span style="font-family: 'JetBrains Mono'; font-weight: bold; color: #F59E0B; font-size: 0.85rem;">{high_count} Kodam</span>
+                            </div>
+                            <p style="margin: 4px 0 0 0; font-size: 0.73rem; color: #CBD5E1; line-height: 1.35;">
+                                <b>Pemantauan Aktif:</b> Terdeteksi isu viral Tinggi/Sedang atau anomali sentimen negatif. Tim Dispenad siaga klarifikasi & wargaming.
+                            </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                with leg_col3:
+                    st.markdown(
+                        f"""
+                        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid #10B981; border-left: 4px solid #10B981; border-radius: 6px; padding: 8px 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <b style="color: #10B981; font-size: 0.82rem;">🟢 HIJAU (KONDUSIF)</b>
+                                <span style="font-family: 'JetBrains Mono'; font-weight: bold; color: #10B981; font-size: 0.85rem;">{safe_count} Kodam</span>
+                            </div>
+                            <p style="margin: 4px 0 0 0; font-size: 0.73rem; color: #CBD5E1; line-height: 1.35;">
+                                <b>Situasi Stabil:</b> Tidak terdeteksi anomali kognitif menonjol. Sentimen teritorial positif/netral, nihil botnet terkoordinasi.
+                            </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                with st.expander("📋 LIHAT TABEL AUDIT DETAIL STATUS 27 KODAM", expanded=False):
+                    tbl_df = geo_df[["kodam", "abbr", "hq", "status_desc", "total_threats", "critical_count", "high_count", "avg_cib", "top_incident"]].copy()
+                    tbl_df["status_ringkas"] = tbl_df["status_desc"].apply(lambda s: s.split(":")[1].strip())
+                    tbl_disp = tbl_df[["kodam", "abbr", "hq", "status_ringkas", "total_threats", "critical_count", "avg_cib", "top_incident"]].copy()
+                    tbl_disp.columns = ["Nama Kodam", "Kode", "Mako", "Status Kesiapsiagaan", "Total Isu", "Kritis", "Skor CIB (%)", "Isu Utama Terdeteksi"]
+                    st.dataframe(tbl_disp, hide_index=True, use_container_width=True)
 
 
         with col_list:
