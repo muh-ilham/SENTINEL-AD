@@ -270,18 +270,20 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                     use_container_width=True,
                     type="secondary"
                 )
+            
+            priority_all = feed_df[feed_df["threat_level"].isin(["Kritis", "Tinggi"])]
+            if priority_all.empty:
+                priority_all = feed_df
+                
+            # Display top 6 Critical/High alerts to achieve symmetrical height balance with 27 Kodam map
+            priority_df = priority_all.head(6)
                     
             st.markdown(
-                "<span style='font-family: JetBrains Mono; font-size: 0.78rem; color: #94A3B8;'>"
-                "4 Isu Paling Mendesak • Klik tombol untuk triage penuh, filter & paging"
-                "</span>",
+                f"<div style='font-family: JetBrains Mono; font-size: 0.76rem; color: #94A3B8; margin-top: -6px; margin-bottom: 8px;'>"
+                f"Menampilkan <b style='color: #F8FAFC;'>6 Isu Paling Mendesak</b> dari total <b style='color: #EF4444;'>{len(priority_all)} Isu Berisiko</b> • Terhubung Sensor Live"
+                f"</div>",
                 unsafe_allow_html=True
             )
-            
-            # Display top 4 Critical/High alerts in compact, tactical defense cards
-            priority_df = feed_df[feed_df["threat_level"].isin(["Kritis", "Tinggi"])].head(4)
-            if priority_df.empty:
-                priority_df = feed_df.head(4)
             
             for _, alert in priority_df.iterrows():
                 level = alert["threat_level"]
@@ -320,6 +322,39 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                         st.caption(f"🔥 Viral: <b style='color: #38BDF8;'>{alert['virality_score']}/100</b>", unsafe_allow_html=True)
                     with tc3:
                         st.caption(f"📱 Plat: <b style='color: #E2E8F0;'>{alert['platform']}</b>", unsafe_allow_html=True)
+
+            # Tactical SOAR & Response Mini Hub for symmetrical balance with the left column
+            kritis_count_tot = len(feed_df[feed_df["threat_level"] == "Kritis"])
+            tinggi_count_tot = len(feed_df[feed_df["threat_level"] == "Tinggi"])
+            
+            with st.container(border=True):
+                r_c1, r_c2 = st.columns([7, 5])
+                with r_c1:
+                    st.markdown(
+                        f"""
+                        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 0.85rem; font-weight: bold; color: #E2E8F0; margin-bottom: 2px;">
+                            🛡️ KESIAPAN TANGGAP DARURAT & SOAR
+                        </div>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 0.74rem; color: #94A3B8; line-height: 1.4;">
+                            Antrean: <b style="color: #EF4444;">{kritis_count_tot} Kritis</b> &nbsp;|&nbsp; 
+                            <b style="color: #F59E0B;">{tinggi_count_tot} Tinggi</b> &nbsp;|&nbsp; 
+                            Dossier: <b style="color: #10B981;">BSSN Ready</b>
+                        </div>
+                        <div style="font-size: 0.72rem; color: #64748B; margin-top: 2px;">
+                            Eskalasi takedown resmi atau verifikasi wargaming Dispenad.
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                with r_c2:
+                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+                    st.button(
+                        f"⚡ Kelola ({len(feed_df)} Isu) ➔",
+                        key="btn_open_full_radar_bottom",
+                        on_click=set_view_radar_hub,
+                        use_container_width=True,
+                        type="primary"
+                    )
 
         # Analytics & Platform Breakdown
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
