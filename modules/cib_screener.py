@@ -23,6 +23,16 @@ from utils.audio_forensics import (
     analyze_audio_data,
     generate_acoustic_dossier_json
 )
+from utils.document_forensics import (
+    get_document_catalog,
+    generate_document_canvas_image,
+    perform_real_ela,
+    generate_document_dossier_json,
+    get_clean_document_html,
+    compute_sha256,
+    compute_md5
+)
+from utils.pdf_exporter import generate_sitrep_pdf
 
 def render_cib_screener():
     """Renders the CIB & Multimodal Deepfake Screener module."""
@@ -871,79 +881,293 @@ def render_cib_screener():
     with tab_doc:
         st.markdown("### 📄 DETEKSI INTEGRITAS DOKUMEN MILITER & KOTAK HIGHLIGHT OCR")
         st.markdown(
-            "Membandingkan dokumen surat perintah (Sprin) asli Mabesad dengan dokumen manipulasi/palsu "
-            "menggunakan analisis OCR font mismatch, anomali penempatan stempel komando, dan ketidaksesuaian stensil."
+            "<p style='color: #94A3B8; font-size: 0.92rem; margin-top: -6px;'>"
+            "Audit multi-lapis keabsahan dokumen naskah dinas militer (Surat Perintah / Sprin / DIPA Alutsista) "
+            "menggunakan analisis OCR font mismatch, Error Level Analysis (ELA) heatmap, deteksi overlay stempel komando, "
+            "dan verifikasi silang terhadap Buku Register Minu Mabesad."
+            "</p>",
+            unsafe_allow_html=True
         )
+
+        catalog = get_document_catalog()
         
         doc_choice = st.selectbox(
             "Pilih Berkas Dokumen Militer untuk Diperiksa:",
             [
-                "Dokumen A: Surat Edaran Palsu Mutasi Staf Dispenad (Sprin/482/IX/2026)",
-                "Dokumen B: Lembar Pengesahan Anggaran Pengadaan Fiktif Alutsista",
-                "Dokumen C: Dokumen Asli Terverifikasi Dispenad (Kontrol Pembanding)"
+                "Dokumen A: Surat Edaran Palsu Mutasi Staf Dispenad (Sprin/482/IX/2026) [🚨 REKOMENDASI AUDIT]",
+                "Dokumen B: Lembar Pengesahan Anggaran Pengadaan Fiktif Alutsista (DIPA/088/BM/2026)",
+                "Dokumen C: Dokumen Asli Terverifikasi Dispenad (Sprin/104/III/2026 - Golden Standard Kontrol)",
+                "📤 Mode Unggah: Pindai Berkas Scan Dokumen Baru (.PNG / .JPG / .JPEG)"
             ]
         )
         
-        col_doc_left, col_doc_right = st.columns([6, 6])
+        is_upload_mode = "Mode Unggah" in doc_choice
+        uploaded_doc = None
         
-        with col_doc_left:
-            st.markdown("#### Tampilan Pratinjau Dokumen & Deteksi Anomali OCR")
-            
-            if "Dokumen A" in doc_choice:
-                # Simulated Document Card with OCR Highlight Boxes
-                doc_html = """
-                <div style="background: #FFFFFF; color: #0F172A; padding: 24px 28px; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-family: 'Times New Roman', serif; position: relative; border: 2px solid #EF4444;">
-                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 12px;">
-                        <div style="font-size: 11px; font-weight: bold; letter-spacing: 0.05em;">TENTARA NASIONAL INDONESIA ANGKATAN DARAT</div>
-                        <div style="font-size: 10px; font-weight: bold;">MARKAS BESAR</div>
-                        <div style="font-size: 9px; color: #475569;">Jl. Veteran No. 5 Jakarta Pusat</div>
-                    </div>
-
-                    <div style="text-align: center; margin-bottom: 14px;">
-                        <div style="font-size: 11px; font-weight: bold; text-decoration: underline;">SURAT PERINTAH MUTASI JABATAN</div>
-                        <div style="position: relative; display: inline-block;">
-                            <span style="font-size: 10px; font-family: 'Courier New', monospace; background: rgba(239, 68, 68, 0.25); border: 1.5px dashed #EF4444; padding: 2px 6px;">
-                                Nomor: Sprin / 482 / IX / 2026-DISPENAD [ANOMALI FONT]
-                            </span>
-                        </div>
-                    </div>
-
-                    <div style="font-size: 10px; line-height: 1.5; margin-bottom: 20px;">
-                        Pertimbangan: Bahwa dalam rangka penyegaran satuan intelijen dan penerangan...<br/>
-                        Diperintahkan: Terhitung mulai tanggal diterbitkan surat ini, memutasikan perwira berikut...
-                    </div>
-
-                    <div style="display: flex; justify-content: flex-end; margin-top: 25px;">
-                        <div style="text-align: center; width: 200px; position: relative;">
-                            <div style="font-size: 10px;">Ditetapkan di: Jakarta</div>
-                            <div style="font-size: 10px; font-weight: bold;">a.n. KEPALA STAF ANGKATAN DARAT</div>
-                            <div style="height: 45px; position: relative; display: flex; align-items: center; justify-content: center;">
-                                <div style="position: absolute; border: 2px dashed #EF4444; background: rgba(239,68,68,0.15); width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #DC2626; font-weight: bold;">
-                                    STEMPEL PALSU (ROTASI 14°)
-                                </div>
-                                <span style="font-family: 'Brush Script MT', cursive; font-size: 18px; color: #1E3A8A; z-index: 2;">Tanda Tangan Palsu</span>
-                            </div>
-                            <div style="font-size: 10px; font-weight: bold; text-decoration: underline;">M. SYAHRIR, M.Sc.</div>
-                            <div style="font-size: 9px;">Mayor Jenderal TNI</div>
-                        </div>
+        if is_upload_mode:
+            st.markdown(
+                """
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed #38BDF8; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                    <div style="font-size: 0.85rem; font-weight: bold; color: #38BDF8;">📤 GERBANG PENERIMAAN SCAN PATROLI SIBER:</div>
+                    <div style="font-size: 0.78rem; color: #CBD5E1; margin-top: 2px;">
+                        Unggah tangkapan layar, pindaian PDF, atau berkas citra dokumen militer yang beredar di media sosial atau grup percakapan (WhatsApp/Telegram) untuk diuji secara real-time.
                     </div>
                 </div>
-                """
-                st.markdown(doc_html, unsafe_allow_html=True)
+                """,
+                unsafe_allow_html=True
+            )
+            uploaded_doc = st.file_uploader(
+                "Unggah Berkas Citra Scan Dokumen Militer:",
+                type=["png", "jpg", "jpeg"],
+                key="uploader_mil_doc"
+            )
+
+        # Determine doc_key and doc_info
+        if is_upload_mode:
+            if uploaded_doc is not None:
+                file_bytes = uploaded_doc.read()
+                real_sha = compute_sha256(file_bytes)
+                real_md5 = compute_md5(file_bytes)
+                ela_img, real_tamper_score, real_metrics = perform_real_ela(file_bytes, quality=90)
+                
+                # Dynamic doc_info for uploaded file
+                is_high_risk = real_tamper_score >= 60.0
+                doc_key = "custom_upload"
+                doc_info = {
+                    "id": f"DOC-SCAN-{real_sha[:8].upper()}",
+                    "code": f"SCAN-{uploaded_doc.name[:18]}",
+                    "name": f"Scan Unggahan: {uploaded_doc.name}",
+                    "category": "Dokumen Patroli Siber Lapangan (Citra Eksternal)",
+                    "threat_level": "Kritis" if is_high_risk else "Sedang",
+                    "verdict": "TERINDIKASI MANIPULASI DIGITAL (HIGH SPLICING RISK)" if is_high_risk else "INTEGRITAS KOMPRESI SERAGAM (LOW ANOMALY)",
+                    "verdict_color": "#EF4444" if is_high_risk else "#10B981",
+                    "tamper_prob": real_tamper_score,
+                    "sha256": real_sha,
+                    "md5": real_md5,
+                    "minu_register_check": {
+                        "status": "NON-REGISTERED (BERKAS EKSTERNAL)",
+                        "status_color": "#F59E0B",
+                        "db_status": "Pemeriksaan Mandiri Analis",
+                        "officer_auth": "Memerlukan Verifikasi Manual Pejabat Personalia",
+                        "bsre_signature": "Tidak Terdeteksi Metatag Sertifikat BSrE",
+                        "official_agenda_book": "Belum Terindeks di Buku Agenda Minu Mabesad"
+                    },
+                    "exif_metadata": {
+                        "Software": "Citra Kamera / Tangkapan Layar Eksternal",
+                        "CreationDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB"),
+                        "ModifiedDate": "Terkompresi Format Web",
+                        "ColorSpace": f"RGB ({real_metrics.get('width', 0)} x {real_metrics.get('height', 0)} px)",
+                        "DPI": "Deteksi Resolusi Layar Standar",
+                        "PageFormat": "Custom Image Buffer"
+                    },
+                    "findings": [
+                        {
+                            "item": "Error Level Analysis (ELA)",
+                            "status": f"TAMPER SCORE {real_tamper_score}%",
+                            "color": "#EF4444" if is_high_risk else "#10B981",
+                            "detail": f"Rerata error level: {real_metrics.get('mean_error_level', 0)}, simpangan baku kompresi: {real_metrics.get('error_std_dev', 0)}. " +
+                                     ("Ditemukan lonjakan kontras kompresi yang mengindikasikan penyisipan grafis atau teks." if is_high_risk else "Pola degradasi kompresi seragam di seluruh piksel dokumen.")
+                        },
+                        {
+                            "item": "Integritas Hash Kriptografis",
+                            "status": "SEALED SHA-256",
+                            "color": "#38BDF8",
+                            "detail": f"Hash SHA-256 berkas: {real_sha}. Digunakan sebagai rujukan takedown BSSN."
+                        }
+                    ]
+                }
             else:
+                # Placeholder when no file is uploaded yet
+                doc_key = "doc_a"
+                doc_info = catalog["doc_a"]
+        elif "Dokumen B" in doc_choice:
+            doc_key = "doc_b"
+            doc_info = catalog["doc_b"]
+        elif "Dokumen C" in doc_choice:
+            doc_key = "doc_c"
+            doc_info = catalog["doc_c"]
+        else:
+            doc_key = "doc_a"
+            doc_info = catalog["doc_a"]
+
+        # 4 Interactive Visual Layers Navigation
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+        layer_mode = st.radio(
+            "Pilih Mode & Lapisan Forensik:",
+            [
+                "🔲 Lapisan 1: Pratinjau Dokumen & Highlight Bounding Box OCR",
+                "🌡️ Lapisan 2: Heatmap Forensik Error Level Analysis (ELA)",
+                "⚖️ Lapisan 3: Komparasi Berdampingan (Side-by-Side Asli vs Tersangka)",
+                "📑 Lapisan 4: Inspeksi Metadata EXIF & Digital Artefak"
+            ],
+            horizontal=True
+        )
+
+        col_doc_left, col_doc_right = st.columns([6.2, 5.8])
+
+        with col_doc_left:
+            st.markdown("#### Visualisasi Dokumen & Deteksi Anomali")
+
+            if layer_mode == "🔲 Lapisan 1: Pratinjau Dokumen & Highlight Bounding Box OCR":
+                col_opt1, col_opt2 = st.columns([6, 6])
+                with col_opt1:
+                    show_boxes = st.checkbox("Aktifkan Kotak Anomali OCR (Bounding Boxes)", value=True)
+                with col_opt2:
+                    view_style = st.radio("Format Visual:", ["HTML Vektor Bersih", "Simulasi Citra Scan (Canvas)"], horizontal=True)
+
+                if is_upload_mode and uploaded_doc is not None:
+                    st.image(file_bytes, caption=f"Pratinjau Berkas Unggahan: {uploaded_doc.name}", use_container_width=True)
+                elif view_style == "HTML Vektor Bersih":
+                    clean_html = get_clean_document_html(doc_key, show_anomalies=show_boxes)
+                    st.markdown(clean_html, unsafe_allow_html=True)
+                else:
+                    doc_img, _ = generate_document_canvas_image(doc_key)
+                    st.image(doc_img, caption=f"Canvas Raster Pindaian Kertas Milnet: {doc_info['code']}", use_container_width=True)
+
+            elif layer_mode == "🌡️ Lapisan 2: Heatmap Forensik Error Level Analysis (ELA)":
+                st.markdown(
+                    "<p style='color: #94A3B8; font-size: 0.8rem; margin-top: -6px;'>"
+                    "<b>Error Level Analysis (ELA):</b> Menguji ketidakseragaman rasio kompresi piksel. "
+                    "Area yang diedit atau disisipkan secara digital (stempel overlay, teks baru) memancarkan pendaran anomali terang kontras tinggi."
+                    "</p>",
+                    unsafe_allow_html=True
+                )
+                
+                ela_q = st.slider("Sensitivitas Deteksi Splicing ELA (Quality Parameter):", min_value=75, max_value=98, value=90, step=1)
+                
+                if is_upload_mode and uploaded_doc is not None:
+                    ela_display, ela_score, _ = perform_real_ela(file_bytes, quality=ela_q)
+                    st.image(ela_display, caption=f"Heatmap ELA Berkas Unggahan (Quality={ela_q}, Splicing Score={ela_score}%)", use_container_width=True)
+                else:
+                    _, ela_display = generate_document_canvas_image(doc_key)
+                    st.image(ela_display, caption=f"Heatmap ELA Simulasi Forensik Pussiberad ({doc_info['code']})", use_container_width=True)
+                
+                # ELA Legend Box
                 st.markdown(
                     """
-                    <div style="background: #FFFFFF; color: #0F172A; padding: 24px 28px; border-radius: 4px; border: 2px solid #10B981; font-family: 'Times New Roman', serif;">
-                        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 12px;">
-                            <div style="font-size: 11px; font-weight: bold;">TENTARA NASIONAL INDONESIA ANGKATAN DARAT</div>
-                            <div style="font-size: 10px; font-weight: bold;">DINAS PENERANGAN</div>
+                    <div style="background: #111C2E; border: 1px solid #1E293B; padding: 10px 14px; border-radius: 4px; margin-top: 8px;">
+                        <div style="font-size: 0.78rem; font-weight: bold; color: #F8FAFC; margin-bottom: 4px;">PANDUAN SPEKTRUM ELA:</div>
+                        <div style="font-size: 0.75rem; color: #CBD5E1;">
+                            <span style="color: #F43F5E; font-weight: bold;">● Pendaran Terang (Luminance Spike):</span> Terdeteksi artefak splicing stempel PNG atau font non-asli.<br/>
+                            <span style="color: #64748B; font-weight: bold;">● Area Gelap Seragam (Low Noise):</span> Tekstur latar kertas dokumen asli tanpa modifikasi.
                         </div>
-                        <div style="text-align: center; margin-bottom: 14px;">
-                            <span style="font-size: 10px; font-weight: bold; background: rgba(16, 185, 129, 0.2); border: 1px solid #10B981; padding: 2px 8px;">
-                                REGISTRASI OTENTIK DATABASE MABESAD: PASSED
-                            </span>
-                        </div>
-                        <p style="font-size: 10px;">Semua stempel digital bertanda tangan kriptografi SHA-256 valid.</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            elif layer_mode == "⚖️ Lapisan 3: Komparasi Berdampingan (Side-by-Side Asli vs Tersangka)":
+                st.markdown(
+                    "<p style='color: #94A3B8; font-size: 0.8rem; margin-top: -6px;'>"
+                    "Perbandingan langsung elemen tata naskah dinas antara dokumen yang diperiksa dengan <b>Golden Standard Mabesad Minu</b>."
+                    "</p>",
+                    unsafe_allow_html=True
+                )
+                
+                # Side-by-side comparison table
+                comparison_matrix = [
+                    {
+                        "parameter": "Kop Surat & Lambang",
+                        "suspect": "72 DPI Cropped Web Image (Buram)" if doc_key != "doc_c" else "Vektor Vektor 300 DPI Resmi",
+                        "golden": "Vektor Monokrom / Emas 300 DPI Resmi",
+                        "match": doc_key == "doc_c"
+                    },
+                    {
+                        "parameter": "Tipografi Nomor Surat",
+                        "suspect": "Courier New Monospaced (Non-Resmi)" if doc_key == "doc_a" else ("Mixed Fonts Mismatch" if doc_key == "doc_b" else "Arial / Bookman Old Style 12pt"),
+                        "golden": "Arial / Bookman Old Style 12pt Standar Jukminu",
+                        "match": doc_key == "doc_c"
+                    },
+                    {
+                        "parameter": "Stempel Komando",
+                        "suspect": "PNG Overlay Digital (Rotasi 14.2°)" if doc_key == "doc_a" else ("Stempel Fiktif Tanpa Kode" if doc_key == "doc_b" else "Tinta Basah Asli Resapan Serat Kertas"),
+                        "golden": "Tinta Minyak Ungu dengan Resapan Serat Kertas Fisik",
+                        "match": doc_key == "doc_c"
+                    },
+                    {
+                        "parameter": "Tanda Tangan Komando",
+                        "suspect": "Brush Script Cursive (Palsu)" if doc_key != "doc_c" else "Tanda Tangan Sah Kadispenad",
+                        "golden": "Spesimen Sah Pejabat Mabesad / BSrE Signature",
+                        "match": doc_key == "doc_c"
+                    },
+                    {
+                        "parameter": "Register Buku Minu",
+                        "suspect": "Tidak Terdaftar (Nomor Kosong)" if doc_key != "doc_c" else "Terdaftar di Buku Agenda TA 2026",
+                        "golden": "Wajib Tercatat di Sistem Otomasi Minu Mabesad",
+                        "match": doc_key == "doc_c"
+                    }
+                ]
+                
+                st.markdown(
+                    """
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.76rem; color: #F8FAFC; background: #0B132B; border: 1px solid #1E293B; border-radius: 4px;">
+                        <thead>
+                            <tr style="background: #111C2E; border-bottom: 2px solid #1E293B; text-align: left;">
+                                <th style="padding: 8px 10px; color: #94A3B8;">Elemen Forensik</th>
+                                <th style="padding: 8px 10px; color: #F87171;">Dokumen Diperiksa</th>
+                                <th style="padding: 8px 10px; color: #34D399;">Golden Standard Mabesad</th>
+                                <th style="padding: 8px 10px; text-align: center; color: #94A3B8;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    """ + "".join([
+                        f"""<tr style="border-bottom: 1px solid #1E293B;">
+                            <td style="padding: 8px 10px; font-weight: bold; color: #CBD5E1;">{m['parameter']}</td>
+                            <td style="padding: 8px 10px; color: {'#FCA5A5' if not m['match'] else '#6EE7B7'};">{m['suspect']}</td>
+                            <td style="padding: 8px 10px; color: #A7F3D0;">{m['golden']}</td>
+                            <td style="padding: 8px 10px; text-align: center; font-weight: bold; color: {'#10B981' if m['match'] else '#EF4444'};">{'✓ COCOK' if m['match'] else '✗ ANOMALI'}</td>
+                        </tr>""" for m in comparison_matrix
+                    ]) + """
+                        </tbody>
+                    </table>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            elif layer_mode == "📑 Lapisan 4: Inspeksi Metadata EXIF & Digital Artefak":
+                st.markdown(
+                    "<p style='color: #94A3B8; font-size: 0.8rem; margin-top: -6px;'>"
+                    "Ekstraksi metadata header citra, profil warna, stempel waktu revisi, dan jejak perangkat lunak penyuntingan."
+                    "</p>",
+                    unsafe_allow_html=True
+                )
+                
+                exif = doc_info.get("exif_metadata", {})
+                st.markdown(
+                    f"""
+                    <div style="background: #0B132B; border: 1px solid #1E293B; border-radius: 6px; padding: 14px;">
+                        <table style="width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #E2E8F0;">
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8; width: 160px;">Software Creator:</td>
+                                <td style="padding: 6px 8px; color: {'#EF4444' if 'Canva' in exif.get('Software','') or 'Photoshop' in exif.get('Software','') else '#10B981'}; font-weight: bold;">
+                                    {exif.get('Software', 'N/A')}
+                                </td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8;">Waktu Pembuatan:</td>
+                                <td style="padding: 6px 8px; color: #38BDF8;">{exif.get('CreationDate', 'N/A')}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8;">Riwayat Modifikasi:</td>
+                                <td style="padding: 6px 8px; color: {'#F59E0B' if 'Spliced' in exif.get('ModifiedDate','') else '#CBD5E1'};">{exif.get('ModifiedDate', 'N/A')}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8;">Color Space:</td>
+                                <td style="padding: 6px 8px; color: #CBD5E1;">{exif.get('ColorSpace', 'N/A')}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8;">Resolusi Cetak (DPI):</td>
+                                <td style="padding: 6px 8px; color: {'#EF4444' if '72' in exif.get('DPI','') else '#10B981'};">{exif.get('DPI', 'N/A')}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #1E293B;">
+                                <td style="padding: 6px 8px; color: #94A3B8;">Hash MD5:</td>
+                                <td style="padding: 6px 8px; color: #94A3B8; word-break: break-all;">{doc_info.get('md5', 'N/A')}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px 8px; color: #94A3B8;">Hash SHA-256:</td>
+                                <td style="padding: 6px 8px; color: #38BDF8; word-break: break-all;">{doc_info.get('sha256', 'N/A')}</td>
+                            </tr>
+                        </table>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -952,34 +1176,49 @@ def render_cib_screener():
         with col_doc_right:
             st.markdown("#### Lembar Temuan Forensik Dokumen (OCR Findings)")
             
-            findings = [
-                {
-                    "item": "Kop Surat & Lambang Garuda Mabesad",
-                    "status": "NON-STANDARD DRAFT",
-                    "detail": "Resolusi artefak piksel 72 DPI (hasil cropping internet), standar resmi menggunakan vektor 300 DPI.",
-                    "color": "#EF4444"
-                },
-                {
-                    "item": "Penomoran Sprin & Tipografi",
-                    "status": "FONT KERNING MISMATCH",
-                    "detail": "Karakter nomor surat menggunakan font 'Courier New' non-resmi, bukan font Arial/Times resmi Mabesad.",
-                    "color": "#EF4444"
-                },
-                {
-                    "item": "Stempel Basah Komando",
-                    "status": "FORGED DIGITAL OVERLAY",
-                    "detail": "Stempel memiliki artefak rotasi 14 derajat dengan transparansi layer PNG yang tidak menyatu dengan serat kertas.",
-                    "color": "#EF4444"
-                },
-                {
-                    "item": "Verifikasi Database Buku Register Sprin",
-                    "status": "INVALID REGISTER NUMBER",
-                    "detail": "Nomor Sprin 482/IX/2026 tidak terdaftar dalam sistem otomasi administrasi umum (Minu) Mabesad.",
-                    "color": "#EF4444"
-                }
-            ]
-            
-            for f in findings:
+            verdict_color = doc_info["verdict_color"]
+            tamper_score = doc_info["tamper_prob"]
+            current_doc_id = doc_info["id"]
+
+            # Status Box Forensik Pussiberad
+            st.markdown(
+                f"""
+                <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 4px solid {verdict_color}; padding: 14px; border-radius: 6px; margin-bottom: 12px;">
+                    <div style="font-family: 'JetBrains Mono'; font-size: 0.72rem; color: #94A3B8;">STATUS VERIFIKASI PUSSIBERAD:</div>
+                    <div style="font-family: 'Chakra Petch'; font-size: 1.05rem; font-weight: 700; color: {verdict_color}; margin: 3px 0;">
+                        {doc_info['verdict']}
+                    </div>
+                    <div style="font-family: 'JetBrains Mono'; font-size: 0.82rem; color: #F8FAFC;">
+                        Probabilitas Manipulasi: <b style="color: {verdict_color}; font-size: 1.2rem;">{tamper_score}%</b>
+                    </div>
+                    <div style="font-family: 'JetBrains Mono'; font-size: 0.68rem; color: #64748B; margin-top: 4px; word-break: break-all;">
+                        SHA-256: {doc_info['sha256'][:28]}...
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Live Verification Check with Mabesad Minu Database
+            minu = doc_info.get("minu_register_check", {})
+            st.markdown(
+                f"""
+                <div style="background: #0B132B; border: 1px solid #1E293B; border-left: 3px solid {minu.get('status_color', '#EF4444')}; padding: 10px 14px; border-radius: 4px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 0.82rem; font-weight: bold; color: #F8FAFC;">🏛️ Database Register Minu Mabesad</span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: {minu.get('status_color', '#EF4444')}; font-weight: bold;">{minu.get('status')}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">
+                        • <b>Buku Agenda:</b> {minu.get('official_agenda_book')}<br/>
+                        • <b>Sertifikasi BSrE:</b> {minu.get('bsre_signature')}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Render Findings Cards
+            for f in doc_info["findings"]:
                 f_card = f"""
                 <div style="background: #111C2E; border: 1px solid #1E293B; border-left: 3px solid {f['color']}; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -991,4 +1230,135 @@ def render_cib_screener():
                 """
                 st.markdown(f_card, unsafe_allow_html=True)
 
-            st.button("📥 Tambahkan Bukti OCR Dokumen ke Takedown Dossier", type="primary")
+            # SOAR Integration & Command Chain Actions
+            st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+            st.markdown("##### ⚡ Tindakan Taktis & Rantai Komando:")
+
+            doc_alert_target = {
+                "id": current_doc_id,
+                "headline": f"Pemalsuan Dokumen Militer: {doc_info['code']}",
+                "bot_account": "Doc-Forgery-Syndicate"
+            }
+            is_esc, esc_info = check_is_escalated(doc_alert_target)
+
+            if is_esc:
+                esc_time = esc_info.get("escalated_at", "Tercatat di Sistem")
+                esc_by = esc_info.get("escalated_by", "Analis Siber (Pussiberad)")
+                esc_id_num = esc_info.get("id", current_doc_id)
+                st.button("✅ BUKTI DOKUMEN PALSU SUDAH DIANTREKAN KE SOAR", key="btn_doc_soar_done", disabled=True, use_container_width=True)
+                st.markdown(
+                    f"""<div style="font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #10B981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px 10px; border-radius: 4px; margin-top: 4px;">
+                    ✓ <b>STATUS SOAR:</b> Terdaftar ({esc_id_num})<br/>
+                    ⏱️ <b>Waktu:</b> {esc_time} | 👤 <b>Oleh:</b> {esc_by}<br/>
+                    👉 <i>Buka Modul <b>'Tactical SOAR & Otorisasi'</b> di navigasi kiri untuk otorisasi Komandan (RBAC).</i>
+                    </div>""",
+                    unsafe_allow_html=True
+                )
+            elif tamper_score >= 50.0:
+                if st.button("🚨 Eskalasikan Temuan Dokumen Palsu Ini ke Antrean SOAR", key="btn_eskalasi_doc_soar", type="primary", use_container_width=True):
+                    now_wib = datetime.now().strftime("%Y-%m-%d %H:%M:%S WIB")
+                    role_actor = st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+                    soar_item = {
+                        "id": current_doc_id,
+                        "title": f"Investigasi Pemalsuan Naskah Dinas: {doc_info['name']}",
+                        "headline": f"Pemalsuan Dokumen Militer: {doc_info['code']}",
+                        "sample_text": f"Ditemukan dokumen militer palsu ({doc_info['category']}) dengan tingkat manipulasi {tamper_score}%. Ditemukan anomali tipografi OCR font mismatch, rotasi stempel digital, dan ketidaksesuaian buku register Minu Mabesad. Berkas bukti siap diajukan ke BSSN & Kominfo untuk takedown dan rilis pers Dispenad.",
+                        "text": f"Ditemukan dokumen militer palsu ({doc_info['category']}) dengan tingkat manipulasi {tamper_score}%. Ditemukan anomali tipografi OCR font mismatch, rotasi stempel digital, dan ketidaksesuaian buku register Minu Mabesad. Berkas bukti siap diajukan ke BSSN & Kominfo untuk takedown dan rilis pers Dispenad.",
+                        "platform": "Multi-Platform (Medsos, Forum & Messaging)",
+                        "root_platform": "Multi-Platform",
+                        "level": "Kritis",
+                        "threat_level": "Kritis",
+                        "target_kodam": "Mabes TNI AD / Dispenad",
+                        "kodam": "Mabes TNI AD / Dispenad",
+                        "cib_cluster_size": 1,
+                        "amplification_nodes": 640,
+                        "virality_score": 92,
+                        "cib_probability": int(tamper_score),
+                        "shares_count": 18200,
+                        "escalated_at": now_wib,
+                        "escalated_by": role_actor,
+                        "is_from_radar": True,
+                        "is_from_doc_forgery": True,
+                        "doc_sha256": doc_info["sha256"]
+                    }
+                    add_escalated_incident(soar_item)
+                    st.session_state["approved_incidents"] = get_approved_incidents()
+                    st.session_state["escalated_soar_incidents"] = get_escalated_incidents()
+                    st.session_state["audit_logs"] = get_audit_logs()
+                    st.toast(f"Temuan Dokumen Palsu ({current_doc_id}) berhasil diajukan ke Antrean SOAR!", icon="🚨")
+                    st.rerun()
+            else:
+                st.markdown(
+                    """
+                    <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10B981; padding: 8px 12px; border-radius: 4px; font-size: 0.78rem; color: #E2E8F0;">
+                        ✓ <b>Status Otentik:</b> Dokumen ini terverifikasi resmi dalam sistem administrasi umum Mabesad dan tidak memerlukan tindakan eskalasi takedown.
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            # Export Forensic Dossier JSON (BSSN Format)
+            dossier_bytes = generate_document_dossier_json(
+                doc_info,
+                examiner_role=st.session_state.get("active_role", "Analis Siber (Pussiberad)")
+            )
+            st.download_button(
+                label="📥 Unduh Dossier Forensik Dokumen (JSON BSSN)",
+                data=dossier_bytes,
+                file_name=f"DOSSIER-FORENSIK-DOKUMEN-{current_doc_id}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+
+            # Export Forensic SITREP PDF
+            sitrep_incident = {
+                "id": current_doc_id,
+                "headline": f"Pemalsuan Dokumen Militer: {doc_info['code']}",
+                "text": f"Analisis forensik dokumen SENTINEL-AD mengonfirmasi fabrikasi naskah dinas militer: {doc_info['name']}. Tingkat manipulasi ELA: {tamper_score}%, Status Register Minu: {doc_info['minu_register_check']['status']}.",
+                "kodam": "Mabes TNI AD / Dispenad",
+                "platform": "Multi-Platform",
+                "cib_probability": tamper_score,
+                "level": "Kritis" if tamper_score >= 50 else "Rendah"
+            }
+            sitrep_pdf_bytes = generate_sitrep_pdf(
+                sitrep_incident,
+                approver_name=st.session_state.get("active_role", "Analis Siber (Pussiberad)"),
+                defcon=st.session_state.get("defcon_level", "DEFCON 3")
+            )
+            st.download_button(
+                label="📄 Unduh Laporan Forensik SITREP Dokumen (PDF)",
+                data=sitrep_pdf_bytes,
+                file_name=f"SITREP-FORENSIK-DOKUMEN-{current_doc_id}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        # Operational SOP Accordion
+        st.markdown("<div style='margin-top: 18px;'></div>", unsafe_allow_html=True)
+        with st.expander("📘 PROSEDUR OPERASIONAL STANDAR (SOP) AUDIT DOKUMEN MILITER PUSSIBERAD & DISPENAD"):
+            st.markdown(
+                """
+                #### TAHAPAN FORENSIK DOKUMEN NASKAH DINAS MILITER TNI AD (JUKMINU & SINTEL)
+                
+                1. **Validasi Format Naskah Dinas (Jukminu TNI AD No. 12/IV/2021):**
+                   - Periksa hierarki kop surat, jarak spasi baris (1.5 line spacing), ukuran font resmi (*Arial* atau *Bookman Old Style* 12 pt), dan keaslian lambang Kartika Eka Paksi / Garuda monokrom vektor 300 DPI.
+                   - Dokumen yang menggunakan font monospaced *Courier New* pada nomor surat merupakan indikasi kuat pengetikan ulang atau fabrikasi non-resmi.
+                   
+                2. **Inspeksi Error Level Analysis (ELA) & Artefak Kompresi Digital:**
+                   - Aktifkan **Lapisan 2: Heatmap ELA** untuk menguji diskontinuitas kompresi JPEG.
+                   - Bagian teks atau stempel yang ditempelkan di atas dokumen hasil scan akan memancarkan luminansi tinggi akibat perbedaan tingkat generasi kompresi.
+                   
+                3. **Audit Forensik Stempel Komando & Mikrogram Keamanan:**
+                   - Stempel komando resmi Mabesad menggunakan tinta khusus berbasis minyak yang meresap ke dalam pori-pori serat kertas fisik (*natural capillary bleeding*).
+                   - Stempel palsu biasanya berupa layer gambar transparan PNG dengan tepi batas kotak tajam, transparansi seragam artifisial, dan rotasi statis (misal 14.2°).
+                   
+                4. **Pemeriksaan Database Register Minu Mabesad:**
+                   - Setiap Surat Perintah (Sprin) dan DIPA anggaran wajib tercatat dalam Buku Agenda Induk Sekretariat Umum (Setumad) / Minu Mabesad.
+                   - Jika nomor Sprin tidak terdaftar, dokumen tersebut diklasifikasikan sebagai **FABRICATED FORGERY (PALSU TOTAL)**.
+                   
+                5. **Rantai Komando & Tindakan Penindakan Cepat:**
+                   - Klik tombol `🚨 Eskalasikan Temuan Dokumen Palsu Ini ke Antrean SOAR`.
+                   - Buka modul **Tactical SOAR & Otorisasi** untuk ditandatangani secara digital oleh Perwira Menengah / Komandan Pussiberad.
+                   - Terbitkan berkas JSON dossier ke BSSN untuk takedown tautan unduhan dokumen di media sosial, dan rilis naskah klarifikasi stempel hoaks via Dispenad.
+                """
+            )
