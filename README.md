@@ -69,7 +69,7 @@ SENTINEL-AD memenuhi **100% dari 5 contoh kapabilitas** yang disyaratkan dalam K
 * **Kedaulatan Data Penuh:** Semua basis data insiden dan log audit SOAR tersimpan lokal (`./data`), menjamin kerahasiaan operasi pertahanan.
 
 ### 5. Kualitas Dokumentasi (Bobot 10%)
-* Dilengkapi dokumentasi arsitektur komprehensif, panduan deployment intranet militer (`DEPLOYMENT_MILNET.md`), matriks kepatuhan hukum, dan naskah panduan demonstrasi langsung (*Pitching Guide*).
+* Dilengkapi dokumentasi arsitektur komprehensif, panduan deployment intranet militer (`DEPLOYMENT_MILNET.md`), matriks kepatuhan regulasi hukum, dan dokumen panduan simulasi operasional lengkap (`PANDUAN_SIMULASI_VIDEO_SENTINEL_AD.pdf`).
 
 ---
 
@@ -146,23 +146,6 @@ Sistem terdiri dari 6 modul operasional yang terintegrasi:
 6. **⚡ Tactical SOAR & Otorisasi Rantai Komando:**
    - Sistem otomasi penindakan berjenjang sesuai kewenangan pangkat/peran (RBAC).
    - Penerbitan surat perintah takedown resmi, dossier hukum BSSN, dan laporan situasi (SITREP) PDF.
-
----
-
-## 🎬 Naskah Presentasi & Panduan Demo Juri (5-Minute Pitch Script)
-
-Bagi tim saat mempresentasikan SENTINEL-AD di hadapan Dewan Juri:
-
-* **Menit 00:00 - 01:00 (Latar Belakang & Masalah):**
-  > *"Bismillah. Izin Komandan dan Dewan Juri yang terhormat. Ancaman terbesar kedaulatan bangsa saat ini tidak hanya terjadi di perbatasan fisik, melainkan di ranah kognitif masyarakat. Perang kognitif menggunakan deepfake suara pejabat, pemalsuan surat perintah Mabesad, dan ribuan buzzer CIB terkoordinasi untuk memecah belah TNI dan rakyat. Kami mempersembahkan SENTINEL-AD, sistem pertahanan kognitif terintegrasi untuk TNI Angkatan Darat."*
-* **Menit 01:00 - 02:00 (Pusat Komando & Deteksi Loncatan Narasi):**
-  > *"Buka Pusat Komando. Di sini pimpinan dapat memantau sentimen teritorial 27 Kodam secara real-time. Pada modul Ingesti & Loncatan Narasi, kita melihat isu separatisme meloncat dari grup Telegram tertutup ke platform X dan TikTok hanya dalam waktu 14 menit dengan amplifikasi volume 154 kali lipat."*
-* **Menit 02:00 - 03:15 (Forensik Multimodal: CIB, Suara & Dokumen):**
-  > *"Pada modul CIB & Deepfake Screener Tab 1, sistem mendeteksi ratusan botnet memposting narasi identik dalam jendela waktu sub-menit (<60 detik). Di Tab 2, rekaman suara hoaks dianalisis menggunakan FFT akustik—terbukti palsu karena hilangnya frekuensi di atas 16kHz dan nihilnya jeda napas biologis. Di Tab 3, surat perintah mutasi palsu diuji dengan Error Level Analysis (ELA)—terlihat jelas stempel komando berotasi 14.2° yang ditempelkan secara digital dan tidak tercatat di Buku Register Minu Mabesad."*
-* **Menit 03:15 - 04:15 (Cognitive Wargaming & Rantai Komando SOAR):**
-  > *"Sebelum Dispenad menerbitkan klarifikasi, naskah diuji di Wargaming Sandbox terhadap 10 persona masyarakat guna memastikan tidak terjadi bumerang opini publik. Setelah tervalidasi, Analis mengeksekusi modul SOAR untuk menerbitkan Laporan SITREP PDF resmi dan Dossier JSON berstempel SHA-256 untuk takedown cepat ke BSSN."*
-* **Menit 04:15 - 05:00 (Kelayakan Implementasi & Penutup):**
-  > *"SENTINEL-AD 100% siap digelar di jaringan intranet MILNET Mabesad secara air-gapped menggunakan Docker, tanpa bergantung pada GPU mahal. Solusi ini mandiri, berdaulat, dan siap menjaga keutuhan NKRI di ranah siber sosial. Terima kasih. Cakra!"*
 
 ---
 
