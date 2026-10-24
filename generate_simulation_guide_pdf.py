@@ -236,7 +236,7 @@ def build_simulation_guide_pdf(output_path="PANDUAN_SIMULASI_VIDEO_SENTINEL_AD.p
         [
             Paragraph("<b>Adegan 1</b><br/>00:00 - 00:20", body_style),
             Paragraph("Pusat Komando (C2 Overview)", body_style),
-            Paragraph("Sorot radar DEFCON, Peta Sentimen 15 KODAM, dan tabel triage insiden.", body_style),
+            Paragraph("Sorot radar DEFCON, Peta Sentimen 27 KODAM, dan tabel triage insiden.", body_style),
             Paragraph("<b>Sentiment Analysis</b><br/>Relevansi Manfaat (25%)", body_style)
         ],
         [
@@ -294,8 +294,8 @@ def build_simulation_guide_pdf(output_path="PANDUAN_SIMULASI_VIDEO_SENTINEL_AD.p
             "num": "1",
             "time": "00:00 - 00:20 (20 Detik)",
             "title": "PEMBUKA & PUSAT KOMANDO (C2 OVERVIEW)",
-            "action": "Arahkan kursor ke Header atas (DEFCON 3 dan Badge Hackathon Kategori 04). Scroll pelan ke bawah menampilkan Peta Interaktif 15 KODAM se-Indonesia dan Radar Insiden Prioritas.",
-            "spoken": '"Selamat pagi dan salam tangguh. Izin Komandan dan Dewan Juri Kartika Cyber Hackathon 2026. Berikut adalah demonstrasi operasional SENTINEL-AD, Sistem Intelijen Siber dan Pertahanan Kognitif Generasi Baru untuk TNI Angkatan Darat. Di halaman awal Pusat Komando C2, pimpinan dapat memantau kesiapsiagaan DEFCON dan sentimen teritorial di lima belas Kodam se-Indonesia secara real-time."',
+            "action": "Arahkan kursor ke Header atas (DEFCON 3 dan Badge Hackathon Kategori 04). Scroll pelan ke bawah menampilkan Peta Interaktif 27 KODAM se-Indonesia dan Radar Insiden Prioritas.",
+            "spoken": '"Selamat pagi dan salam tangguh. Izin Komandan dan Dewan Juri Kartika Cyber Hackathon 2026. Berikut adalah demonstrasi operasional SENTINEL-AD, Sistem Intelijen Siber dan Pertahanan Kognitif Generasi Baru untuk TNI Angkatan Darat. Di halaman awal Pusat Komando C2, pimpinan dapat memantau kesiapsiagaan DEFCON dan sentimen teritorial di dua puluh tujuh Kodam se-Indonesia secara real-time."',
             "highlight": "Menunjukkan kesiapan platform command-and-control terintegrasi sesuai doktrin teritorial TNI AD."
         },
         {

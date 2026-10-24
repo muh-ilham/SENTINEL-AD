@@ -9,22 +9,40 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-# Kodam Geographic Coordinates and Regional Commands
+# Kodam Geographic Coordinates and Regional Commands (27 Kodam TNI AD - Renstra Satu Provinsi Satu Kodam)
 KODAM_REGIONS = {
-    "Kodam I/Bukit Barisan": {"lat": 3.5952, "lon": 98.6722, "hq": "Medan, Sumatera Utara", "abbr": "I/BB"},
-    "Kodam II/Sriwijaya": {"lat": -2.9909, "lon": 104.7565, "hq": "Palembang, Sumatera Selatan", "abbr": "II/SWJ"},
-    "Kodam Jaya/Jayakarta": {"lat": -6.2088, "lon": 106.8456, "hq": "Jakarta Timur, DKI Jakarta", "abbr": "JAYA"},
-    "Kodam III/Siliwangi": {"lat": -6.9175, "lon": 107.6191, "hq": "Bandung, Jawa Barat", "abbr": "III/SLW"},
-    "Kodam IV/Diponegoro": {"lat": -7.0051, "lon": 110.4381, "hq": "Semarang, Jawa Tengah", "abbr": "IV/DIP"},
-    "Kodam V/Brawijaya": {"lat": -7.2575, "lon": 112.7521, "hq": "Surabaya, Jawa Timur", "abbr": "V/BRW"},
-    "Kodam VI/Mulawarman": {"lat": -1.2654, "lon": 116.8312, "hq": "Balikpapan, Kalimantan Timur (IKN)", "abbr": "VI/MLW"},
-    "Kodam IX/Udayana": {"lat": -8.6705, "lon": 115.2126, "hq": "Denpasar, Bali & Nusa Tenggara", "abbr": "IX/UDY"},
-    "Kodam XII/Tanjungpura": {"lat": -0.0263, "lon": 109.3425, "hq": "Kubu Raya, Kalimantan Barat", "abbr": "XII/TPR"},
-    "Kodam XIII/Merdeka": {"lat": 1.4748, "lon": 124.8421, "hq": "Manado, Sulawesi Utara", "abbr": "XIII/MDK"},
-    "Kodam XIV/Hasanuddin": {"lat": -5.1477, "lon": 119.4327, "hq": "Makassar, Sulawesi Selatan", "abbr": "XIV/HSN"},
-    "Kodam XVI/Pattimura": {"lat": -3.6547, "lon": 128.1906, "hq": "Ambon, Maluku", "abbr": "XVI/PTM"},
-    "Kodam XVII/Cenderawasih": {"lat": -2.5337, "lon": 140.7181, "hq": "Jayapura, Papua", "abbr": "XVII/CEN"},
-    "Kodam XVIII/Kasuari": {"lat": -0.8615, "lon": 134.0620, "hq": "Manokwari, Papua Barat", "abbr": "XVIII/KSR"}
+    # 15 Kodam Awal & Utama
+    "Kodam Iskandar Muda (IM)": {"lat": 5.5483, "lon": 95.3238, "hq": "Banda Aceh, Aceh", "abbr": "IM", "province": "Aceh"},
+    "Kodam I/Bukit Barisan": {"lat": 3.5952, "lon": 98.6722, "hq": "Medan, Sumatera Utara", "abbr": "I/BB", "province": "Sumatera Utara"},
+    "Kodam II/Sriwijaya": {"lat": -2.9909, "lon": 104.7565, "hq": "Palembang, Sumatera Selatan", "abbr": "II/SWJ", "province": "Sumatera Selatan & Kep. Bangka Belitung"},
+    "Kodam Jayakarta (Kodam Jaya)": {"lat": -6.2088, "lon": 106.8456, "hq": "Jakarta Timur, DKI Jakarta", "abbr": "JAYA", "province": "DKI Jakarta, Tangerang, Depok, Bekasi"},
+    "Kodam III/Siliwangi": {"lat": -6.9175, "lon": 107.6191, "hq": "Bandung, Jawa Barat", "abbr": "III/SLW", "province": "Jawa Barat & Banten"},
+    "Kodam IV/Diponegoro": {"lat": -7.0051, "lon": 110.4381, "hq": "Semarang, Jawa Tengah", "abbr": "IV/DIP", "province": "Jawa Tengah"},
+    "Kodam V/Brawijaya": {"lat": -7.2575, "lon": 112.7521, "hq": "Surabaya, Jawa Timur", "abbr": "V/BRW", "province": "Jawa Timur"},
+    "Kodam VI/Mulawarman": {"lat": -1.2654, "lon": 116.8312, "hq": "Balikpapan, Kalimantan Timur (IKN)", "abbr": "VI/MLW", "province": "Kalimantan Timur & Kalimantan Utara"},
+    "Kodam IX/Udayana": {"lat": -8.6705, "lon": 115.2126, "hq": "Denpasar, Bali", "abbr": "IX/UDY", "province": "Bali"},
+    "Kodam XII/Tanjungpura": {"lat": -0.0263, "lon": 109.3425, "hq": "Kubu Raya, Kalimantan Barat", "abbr": "XII/TPR", "province": "Kalimantan Barat"},
+    "Kodam XIII/Merdeka": {"lat": 1.4748, "lon": 124.8421, "hq": "Manado, Sulawesi Utara", "abbr": "XIII/MDK", "province": "Sulawesi Utara & Gorontalo"},
+    "Kodam XIV/Hasanuddin": {"lat": -5.1477, "lon": 119.4327, "hq": "Makassar, Sulawesi Selatan", "abbr": "XIV/HSN", "province": "Sulawesi Selatan"},
+    "Kodam XV/Pattimura": {"lat": -3.6547, "lon": 128.1906, "hq": "Ambon, Maluku", "abbr": "XV/PTM", "province": "Maluku"},
+    "Kodam XVII/Cenderawasih": {"lat": -2.5337, "lon": 140.7181, "hq": "Jayapura, Papua", "abbr": "XVII/CEN", "province": "Papua & Papua Pegunungan"},
+    "Kodam XVIII/Kasuari": {"lat": -0.8615, "lon": 134.0620, "hq": "Manokwari, Papua Barat", "abbr": "XVIII/KSR", "province": "Papua Barat & Papua Barat Daya"},
+    
+    # 6 Kodam Baru Diresmikan 2025 (Pemekaran Strategis Tahap I)
+    "Kodam XIX/Tuanku Tambusai": {"lat": 0.5071, "lon": 101.4478, "hq": "Pekanbaru, Riau", "abbr": "XIX/TT", "province": "Riau"},
+    "Kodam XX/Tuanku Imam Bonjol": {"lat": -0.9471, "lon": 100.4172, "hq": "Padang, Sumatera Barat", "abbr": "XX/TIB", "province": "Sumatera Barat & Jambi"},
+    "Kodam XXI/Radin Inten": {"lat": -5.4297, "lon": 105.2625, "hq": "Bandar Lampung, Lampung", "abbr": "XXI/RI", "province": "Lampung & Bengkulu"},
+    "Kodam XXII/Tambun Bungai": {"lat": -2.2161, "lon": 113.9139, "hq": "Palangka Raya, Kalimantan Tengah", "abbr": "XXII/TB", "province": "Kalimantan Tengah & Kalimantan Selatan"},
+    "Kodam XXIII/Palaka Wira": {"lat": -0.9003, "lon": 119.8779, "hq": "Palu, Sulawesi Tengah", "abbr": "XXIII/PW", "province": "Sulawesi Tengah & Sulawesi Barat"},
+    "Kodam XXIV/Mandala Trikora": {"lat": -8.4991, "lon": 140.4010, "hq": "Merauke, Papua Selatan", "abbr": "XXIV/MT", "province": "Papua Selatan"},
+    
+    # 6 Kodam Baru Diresmikan 2026 (Pemekaran Strategis Tahap II)
+    "Kodam XXV/Sultan Mahmud Riayatsyah": {"lat": 1.0828, "lon": 104.0305, "hq": "Tanjungpinang / Batam, Kepri", "abbr": "XXV/SMR", "province": "Kepulauan Riau"},
+    "Kodam XXVI/Mataram": {"lat": -7.7956, "lon": 110.3695, "hq": "Yogyakarta, D.I. Yogyakarta", "abbr": "XXVI/MTR", "province": "D.I. Yogyakarta"},
+    "Kodam XXVII/Sobe Sonbai": {"lat": -10.1772, "lon": 123.6070, "hq": "Kupang, Nusa Tenggara Timur", "abbr": "XXVII/SS", "province": "Nusa Tenggara Timur (NTT)"},
+    "Kodam XXVIII/Moloku Kie Raha": {"lat": 0.7893, "lon": 127.3871, "hq": "Ternate / Sofifi, Maluku Utara", "abbr": "XXVIII/MKR", "province": "Maluku Utara"},
+    "Kodam XXIX/Mambruk": {"lat": -3.3667, "lon": 135.4833, "hq": "Nabire, Papua Tengah", "abbr": "XXIX/MBR", "province": "Papua Tengah"},
+    "Kodam XXX/Rinambora": {"lat": -8.5833, "lon": 116.1167, "hq": "Mataram, Nusa Tenggara Barat", "abbr": "XXX/RNB", "province": "Nusa Tenggara Barat (NTB)"}
 }
 
 PRIMARY_INCIDENTS = [
@@ -47,7 +65,7 @@ PRIMARY_INCIDENTS = [
         "level": "Tinggi",
         "root_platform": "X (Twitter)",
         "jump_sequence": ["X (Twitter)", "Telegram", "Media Daring"],
-        "target_kodam": "Kodam Jaya/Jayakarta",
+        "target_kodam": "Kodam Jayakarta (Kodam Jaya)",
         "cib_cluster_size": 32,
         "sample_text": "Beredar PDF berkop lambang Mabesad dan tanda tangan digital Danpuspomad palsu mengenai restrukturisasi mendadak perwira staf Dispenad. Font dan nomor registrasi Sprin tidak valid.",
         "sentiment": -0.65
@@ -99,6 +117,42 @@ PRIMARY_INCIDENTS = [
         "cib_cluster_size": 42,
         "sample_text": "Potongan video apel siaga Yonif 726/Tamalatea di Makassar dipelintir akun anonim TikTok @lensa.sulsel sebagai 'Pengamanan Darurat Konflik Tambang Sultra'. Terverifikasi konten daur ulang kegiatan HUT TNI.",
         "sentiment": -0.68
+    },
+    {
+        "id": "INC-2026-KEPRI",
+        "title": "Disinformasi Kedaulatan Laut Perbatasan Selat Malaka & Pulau Terluar",
+        "category": "Border Provocation / Sovereignty Hoax",
+        "level": "Kritis",
+        "root_platform": "Facebook",
+        "jump_sequence": ["Facebook", "TikTok", "Media Daring", "X (Twitter)"],
+        "target_kodam": "Kodam XXV/Sultan Mahmud Riayatsyah",
+        "cib_cluster_size": 53,
+        "sample_text": "Narasi provokatif beredar di media sosial mengklaim pangkalan patroli TNI AD di Kepri dilemahkan. Dikonfirmasi sebagai hoaks fabrikasi akun asing proxy regional.",
+        "sentiment": -0.82
+    },
+    {
+        "id": "INC-2026-MERAUKE",
+        "title": "Hoaks Ketegangan Pos Batas Sota Wilayah Perbatasan Darat RI-PNG",
+        "category": "Border Disinformation / PsyOps",
+        "level": "Tinggi",
+        "root_platform": "X (Twitter)",
+        "jump_sequence": ["X (Twitter)", "Telegram", "YouTube"],
+        "target_kodam": "Kodam XXIV/Mandala Trikora",
+        "cib_cluster_size": 39,
+        "sample_text": "Penyebaran foto lama insiden penyelundupan yang dibingkai sebagai bentrokan bersenjata aktif di Pos Lintas Batas Sota, Kabupaten Merauke.",
+        "sentiment": -0.74
+    },
+    {
+        "id": "INC-2026-KALENG",
+        "title": "Spekulasi Penyelundupan Logistik Pertahanan Koridor Jalur Trans-Kalimantan",
+        "category": "Strategic Route Disruption / CIB",
+        "level": "Sedang",
+        "root_platform": "TikTok",
+        "jump_sequence": ["TikTok", "Telegram", "Media Daring"],
+        "target_kodam": "Kodam XXII/Tambun Bungai",
+        "cib_cluster_size": 28,
+        "sample_text": "Konten video rekayasa narasi yang menuduh konvoi truk perbekalan Kodam Tambun Bungai sebagai pengangkutan bahan tambang ilegal.",
+        "sentiment": -0.58
     }
 ]
 
@@ -152,10 +206,12 @@ def generate_threat_feed(n=50, seed=42):
             "TikTok": [f"@fakta.tersembunyi.{random.randint(10,99)}", f"@militer.update.viral", f"@lensa.makassar.update", f"@sorot.hasanuddin"],
             "YouTube": [f"Channel Kabar Nusantara 24", f"Sorotan Militer Aktual", f"Garuda Celebes News", f"Kanal Opini Publik"],
             "Instagram": [f"@lensa.sulsel.terkini", f"@kabar_makassar_hari_ini", f"@sorot_angkatan_darat"],
+            "Facebook": [f"Grup Diskusi Hankam Nusantara", f"Komunitas Warga Peduli Teritorial", f"Forum Suara Bela Negara", f"Lensa Militer Indonesia"],
             "Media Daring": [f"wartanews-portal.xyz", f"makassar-teropong.net", f"suara-rakyat-indonesia.online", f"celebes-aktual-news.com"]
         }
         
-        author = random.choice(author_types[platform])
+        fallback_authors = [f"Aktor_Siber_{random.randint(100, 999)}", f"Kanal_Informasi_{random.randint(1, 99)}"]
+        author = random.choice(author_types.get(platform, fallback_authors))
         
         records.append({
             "id": f"THREAT-2026-{1000 + i}",

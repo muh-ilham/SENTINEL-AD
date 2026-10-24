@@ -74,7 +74,7 @@ def main():
                 <div style="font-size: 0.73rem; color: #CBD5E1; font-family: 'JetBrains Mono', monospace;">
                     <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Buzzer/Bot Detection:</b><br/><span style="color: #94A3B8;">Tab 1 CIB Sync &lt;60s &amp; Bot Cluster</span></div>
                     <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Hoax Classifier:</b><br/><span style="color: #94A3B8;">Tab 2 FFT Audio &amp; Tab 3 ELA Doc</span></div>
-                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Sentiment Dashboard:</b><br/><span style="color: #94A3B8;">15 Kodam GEOINT &amp; 10 Persona Wargaming</span></div>
+                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Sentiment Dashboard:</b><br/><span style="color: #94A3B8;">27 Kodam GEOINT &amp; 10 Persona Wargaming</span></div>
                     <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Social Network Analysis:</b><br/><span style="color: #94A3B8;">Topologi SNA PyVis &amp; Sentralitas</span></div>
                     <div style="color: #34D399;">✅ <b>Early Warning Isu Viral:</b><br/><span style="color: #94A3B8;">Narrative Jump Darknet ➔ Medsos</span></div>
                 </div>

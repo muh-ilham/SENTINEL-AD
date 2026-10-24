@@ -8,7 +8,7 @@ $synth.SetOutputToWaveFile("voiceover_demo.wav")
 $text = @"
 Selamat pagi dan salam tangguh. Izin Komandan dan Dewan Juri Kartika Cyber Hackathon 2026. 
 Berikut adalah demonstrasi simulasi operasional SENTINEL-AD, Sistem Intelijen Siber dan Pertahanan Kognitif Generasi Baru untuk TNI Angkatan Darat.
-Modul pertama adalah Pusat Komando C2, yang memantau kesiapsiagaan DEFCON dan sentimen teritorial di lima belas Kodam se-Indonesia.
+Modul pertama adalah Pusat Komando C2, yang memantau kesiapsiagaan DEFCON dan sentimen teritorial di dua puluh tujuh Kodam se-Indonesia.
 Modul kedua adalah Ingesti dan Loncatan Narasi, yang melacak propagasi disinformasi dari kanal gelap Telegram hingga viral di platform TikTok dan Twitter.
 Modul ketiga adalah CIB Screener dan Forensik Multimodal, yang mengaudit botnet terkoordinasi, rekaman kloning suara deepfake dengan Fourier Transform 16 kilohertz, serta pemalsuan surat perintah mutasi militer menggunakan Error Level Analysis.
 Modul keempat adalah Cognitive Wargaming Sandbox, yang menyimulasikan naskah klarifikasi Dispenad terhadap sepuluh persona masyarakat guna meminimalkan risiko bumerang opini publik.

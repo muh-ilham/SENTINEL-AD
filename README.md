@@ -25,7 +25,7 @@ SENTINEL-AD memenuhi **100% dari 5 contoh kapabilitas** yang disyaratkan dalam K
 | :--- | :--- | :--- | :---: |
 | **1. Buzzer / Bot Detection** | `modules/cib_screener.py` (Tab 1) | **Temporal Burst Detection Window (<60 detik):** Mengidentifikasi akun botnet terkoordinasi yang memviralkan isu hoaks secara serentak, kalkulasi skor probabilitas bot, dan klasterisasi jaringan amplifikasi. | **100% COMPLIANT** (Active) |
 | **2. Hoax Classifier** | `modules/cib_screener.py` (Tab 2 & 3) & `modules/ingestion_tracker.py` | **Multimodal Forensics Classifier:**<br/>• **Audio Deepfake Screener:** FFT spektrum vokal, cutoff vocoder 16 kHz, dan ketiadaan jeda napas biologis.<br/>• **Military Document OCR & ELA:** Uji font mismatch (Courier vs Arial/Bookman), deteksi stempel rotasi 14.2°, dan Error Level Analysis (ELA) splicing.<br/>• **Lexicon Classifier:** Klasifikasi keparahan isu pertahanan (Kritis, Tinggi, Sedang). | **100% COMPLIANT** (Active) |
-| **3. Sentiment Analysis Dashboard** | `modules/dashboard.py` & `modules/wargaming_sandbox.py` | **Pusat Komando (C2 Overview) & Wargaming Sandbox:**<br/>• Pemetaan GEOINT sentimen teritorial di **15 KODAM** se-Indonesia.<br/>• Radar DEFCON kesiapsiagaan ancaman kognitif.<br/>• **Cognitive Wargaming:** Simulasi respon opini publik pada **10 persona masyarakat** (Nasionalis, Santri, Mahasiswa, Buzzer, dll) untuk mengukur *Backfire Risk*. | **100% COMPLIANT** (Active) |
+| **3. Sentiment Analysis Dashboard** | `modules/dashboard.py` & `modules/wargaming_sandbox.py` | **Pusat Komando (C2 Overview) & Wargaming Sandbox:**<br/>• Pemetaan GEOINT sentimen teritorial di **27 KODAM** se-Indonesia (Renstra Satu Provinsi Satu Kodam).<br/>• Radar DEFCON kesiapsiagaan ancaman kognitif.<br/>• **Cognitive Wargaming:** Simulasi respon opini publik pada **10 persona masyarakat** (Nasionalis, Santri, Mahasiswa, Buzzer, dll) untuk mengukur *Backfire Risk*. | **100% COMPLIANT** (Active) |
 | **4. Social Network Analysis (SNA)** | `modules/threat_graph.py` | **Topologi Graf Interaktif (NetworkX & PyVis):** Memetakan relasi simpul *Seed Account* (inisiator), *Amplifier Cluster* (botnet), *Bridge Node* (jembatan penghubung), dan *Organic Audience*. Dilengkapi kalkulasi metrik sentralitas (*Degree, Betweenness*) dan ekspor Excel/CSV. | **100% COMPLIANT** (Active) |
 | **5. Early Warning Isu Viral** | `modules/ingestion_tracker.py` | **Narrative Jump Velocity Tracker:** Mendeteksi loncatan narasi dari kanal tertutup (*Dark Web / Telegram*) ke ranah terbuka beramplifikasi tinggi (*X, TikTok, Media Daring*). Menghitung indeks kecepatan loncatan (*Jump Velocity*) dan faktor ledakan volume penonton (*Explosion Factor*). | **100% COMPLIANT** (Active) |
 
@@ -122,7 +122,7 @@ Sistem terdiri dari 6 modul operasional yang terintegrasi:
 
 1. **🛡️ Pusat Komando (C2 Overview & Peta Geospasial):**
    - Pemantauan kesiapan DEFCON nasional.
-   - Peta interaktif sentimen kognitif di 15 Kodam teritorial.
+   - Peta interaktif sentimen kognitif di 27 Kodam teritorial se-Indonesia.
    - Matriks prioritas insiden dan filter ancaman real-time.
 
 2. **📡 Ingesti & Loncatan Narasi (Narrative Jump):**
@@ -156,7 +156,7 @@ Bagi tim saat mempresentasikan SENTINEL-AD di hadapan Dewan Juri:
 * **Menit 00:00 - 01:00 (Latar Belakang & Masalah):**
   > *"Bismillah. Izin Komandan dan Dewan Juri yang terhormat. Ancaman terbesar kedaulatan bangsa saat ini tidak hanya terjadi di perbatasan fisik, melainkan di ranah kognitif masyarakat. Perang kognitif menggunakan deepfake suara pejabat, pemalsuan surat perintah Mabesad, dan ribuan buzzer CIB terkoordinasi untuk memecah belah TNI dan rakyat. Kami mempersembahkan SENTINEL-AD, sistem pertahanan kognitif terintegrasi untuk TNI Angkatan Darat."*
 * **Menit 01:00 - 02:00 (Pusat Komando & Deteksi Loncatan Narasi):**
-  > *"Buka Pusat Komando. Di sini pimpinan dapat memantau sentimen teritorial 15 Kodam secara real-time. Pada modul Ingesti & Loncatan Narasi, kita melihat isu separatisme meloncat dari grup Telegram tertutup ke platform X dan TikTok hanya dalam waktu 14 menit dengan amplifikasi volume 154 kali lipat."*
+  > *"Buka Pusat Komando. Di sini pimpinan dapat memantau sentimen teritorial 27 Kodam secara real-time. Pada modul Ingesti & Loncatan Narasi, kita melihat isu separatisme meloncat dari grup Telegram tertutup ke platform X dan TikTok hanya dalam waktu 14 menit dengan amplifikasi volume 154 kali lipat."*
 * **Menit 02:00 - 03:15 (Forensik Multimodal: CIB, Suara & Dokumen):**
   > *"Pada modul CIB & Deepfake Screener Tab 1, sistem mendeteksi ratusan botnet memposting narasi identik dalam jendela waktu sub-menit (<60 detik). Di Tab 2, rekaman suara hoaks dianalisis menggunakan FFT akustik—terbukti palsu karena hilangnya frekuensi di atas 16kHz dan nihilnya jeda napas biologis. Di Tab 3, surat perintah mutasi palsu diuji dengan Error Level Analysis (ELA)—terlihat jelas stempel komando berotasi 14.2° yang ditempelkan secara digital dan tidak tercatat di Buku Register Minu Mabesad."*
 * **Menit 03:15 - 04:15 (Cognitive Wargaming & Rantai Komando SOAR):**

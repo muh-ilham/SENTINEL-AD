@@ -81,7 +81,7 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
             st.markdown("### 🗺️ PETA SITUASI GEOSPASIAL ANCAMAN KODAM")
             st.markdown(
                 "<span style='font-family: JetBrains Mono; font-size: 0.8rem; color: #38BDF8;'>"
-                "Satelit Pemantauan Disinformasi Teritorial & Konsentrasi Narasi Separatisme/SARA"
+                "Satelit Pemantauan Disinformasi Teritorial di 27 Kodam se-Indonesia (Renstra Transformasi Satu Provinsi Satu Kodam)"
                 "</span>", 
                 unsafe_allow_html=True
             )
@@ -149,7 +149,7 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                 m_c1, m_c2, m_c3 = st.columns(3)
                 with m_c1:
                     st.caption("🌐 **KODAM TERPANTAU**")
-                    st.markdown("<span style='font-family: JetBrains Mono; color: #38BDF8; font-weight: bold;'>15 Komando Daerah</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='font-family: JetBrains Mono; color: #38BDF8; font-weight: bold;'>{len(geo_df)} Komando Daerah</span>", unsafe_allow_html=True)
                 with m_c2:
                     st.caption("⚠️ **SEKTOR RAWAN**")
                     if crit_count > 0:
@@ -159,6 +159,7 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
                 with m_c3:
                     st.caption("📡 **TELEMETRI GEOINT**")
                     st.markdown("<span style='font-family: JetBrains Mono; color: #10B981; font-weight: bold;'>AKTIF • 18ms Latency</span>", unsafe_allow_html=True)
+
 
         with col_list:
             col_radar_title, col_radar_btn = st.columns([7, 5])
