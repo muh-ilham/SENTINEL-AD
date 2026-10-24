@@ -259,16 +259,17 @@ def render_dashboard(current_role="Analis Siber (Pussiberad)"):
 
 
         with col_list:
-            col_radar_title, col_radar_btn = st.columns([7, 5])
+            col_radar_title, col_radar_badge = st.columns([8, 4])
             with col_radar_title:
                 st.markdown("### ⚡ RADAR INSIDEN PRIORITAS")
-            with col_radar_btn:
-                st.button(
-                    "🚀 Buka Radar Penuh ➔",
-                    key="btn_open_full_radar",
-                    on_click=set_view_radar_hub,
-                    use_container_width=True,
-                    type="secondary"
+            with col_radar_badge:
+                st.markdown(
+                    "<div style='text-align: right; margin-top: 10px;'>"
+                    "<span style='font-family: JetBrains Mono; font-size: 0.72rem; color: #10B981; background: rgba(16,185,129,0.12); border: 1px solid #10B981; padding: 3px 8px; border-radius: 4px; font-weight: bold;'>"
+                    "🟢 LIVE RADAR"
+                    "</span>"
+                    "</div>",
+                    unsafe_allow_html=True
                 )
             
             priority_all = feed_df[feed_df["threat_level"].isin(["Kritis", "Tinggi"])]
