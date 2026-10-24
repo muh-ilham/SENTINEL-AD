@@ -42,7 +42,7 @@ def main():
     with st.sidebar:
         st.markdown(
             """
-            <div style="text-align: center; padding: 12px 6px; border-bottom: 1px solid #1E293B; margin-bottom: 16px;">
+            <div style="text-align: center; padding: 12px 6px; border-bottom: 1px solid #1E293B; margin-bottom: 14px;">
                 <div style="font-size: 2.2rem; margin-bottom: 4px;">🛡️</div>
                 <div style="font-family: 'Chakra Petch', sans-serif; font-size: 1.35rem; font-weight: 800; color: #22D3EE; letter-spacing: 0.1em;">
                     SENTINEL-AD
@@ -50,15 +50,38 @@ def main():
                 <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #94A3B8; text-transform: uppercase; margin-top: 2px;">
                     TNI AD Cognitive Defense System
                 </div>
-                <div style="margin-top: 6px;">
+                <div style="margin-top: 6px; display: flex; justify-content: center; gap: 4px;">
                     <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; background: rgba(6, 182, 212, 0.15); color: #06B6D4; border: 1px solid rgba(6, 182, 212, 0.4); padding: 2px 6px; border-radius: 4px;">
                         PUSSIBERAD × DISPENAD
                     </span>
+                </div>
+                <div style="margin-top: 8px; background: rgba(220, 38, 38, 0.12); border: 1px solid #DC2626; padding: 5px 8px; border-radius: 4px;">
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #FCA5A5; font-weight: bold; text-align: center;">
+                        🏆 KARTIKA CYBER HACKATHON 2026
+                    </div>
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: #E2E8F0; text-align: center; margin-top: 1px;">
+                        KATEGORI 04: SIBER SOSIAL (COGNITIVE DOMAIN)
+                    </div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
+        
+        with st.expander("🎯 Kepatuhan Rubrik Kategori 04 (5/5)"):
+            st.markdown(
+                """
+                <div style="font-size: 0.73rem; color: #CBD5E1; font-family: 'JetBrains Mono', monospace;">
+                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Buzzer/Bot Detection:</b><br/><span style="color: #94A3B8;">Tab 1 CIB Sync &lt;60s &amp; Bot Cluster</span></div>
+                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Hoax Classifier:</b><br/><span style="color: #94A3B8;">Tab 2 FFT Audio &amp; Tab 3 ELA Doc</span></div>
+                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Sentiment Dashboard:</b><br/><span style="color: #94A3B8;">15 Kodam GEOINT &amp; 10 Persona Wargaming</span></div>
+                    <div style="color: #34D399; margin-bottom: 4px;">✅ <b>Social Network Analysis:</b><br/><span style="color: #94A3B8;">Topologi SNA PyVis &amp; Sentralitas</span></div>
+                    <div style="color: #34D399;">✅ <b>Early Warning Isu Viral:</b><br/><span style="color: #94A3B8;">Narrative Jump Darknet ➔ Medsos</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
         
         st.markdown("### 👤 OTORISASI PERAN (RBAC)")
         role_options = [

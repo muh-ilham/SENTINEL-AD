@@ -270,16 +270,23 @@ def render_tactical_header(current_role="Analis Siber (Pussiberad)", threat_leve
     
     accent_color, desc = defcon_styles.get(threat_level, ("#F59E0B", "ELEVATED"))
     
-    col_l, col_r = st.columns([5, 7])
+    col_l, col_r = st.columns([6, 6])
     with col_l:
         st.markdown(
-            f'<div style="background:#0B1120; border:1px solid #334155; border-left:4px solid {accent_color}; padding:8px 14px; border-radius:6px; display:inline-flex; align-items:center; gap:10px; margin-bottom:12px;">'
-            f'<span style="width:10px; height:10px; border-radius:50%; background:{accent_color}; box-shadow:0 0 8px {accent_color}; display:inline-block;"></span>'
-            f'<span style="font-family:\'JetBrains Mono\', monospace; font-weight:800; color:{accent_color}; font-size:0.85rem; letter-spacing:0.05em;">THREAT: {threat_level}</span>'
-            f'<span style="font-family:\'JetBrains Mono\', monospace; font-size:0.75rem; color:#CBD5E1;">[{desc}]</span>'
+            f'<div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;">'
+            f'<div style="background:#0B1120; border:1px solid #334155; border-left:4px solid {accent_color}; padding:7px 12px; border-radius:6px; display:inline-flex; align-items:center; gap:8px;">'
+            f'<span style="width:9px; height:9px; border-radius:50%; background:{accent_color}; box-shadow:0 0 8px {accent_color}; display:inline-block;"></span>'
+            f'<span style="font-family:\'JetBrains Mono\', monospace; font-weight:800; color:{accent_color}; font-size:0.82rem; letter-spacing:0.05em;">THREAT: {threat_level}</span>'
+            f'<span style="font-family:\'JetBrains Mono\', monospace; font-size:0.72rem; color:#CBD5E1;">[{desc}]</span>'
+            f'</div>'
+            f'<div style="background:rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.4); padding:6px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">'
+            f'<span style="font-size:0.75rem;">🏆</span>'
+            f'<span style="font-family:\'JetBrains Mono\', monospace; font-size:0.7rem; color:#FCA5A5; font-weight:bold;">KARTIKA CYBER HACKATHON: TRACK 04 SIBER SOSIAL</span>'
+            f'</div>'
             f'</div>',
             unsafe_allow_html=True
         )
+
     with col_r:
         st.markdown(
             f'<div style="background:#0B1120; border:1px solid #334155; padding:8px 14px; border-radius:6px; display:flex; justify-content:flex-end; align-items:center; gap:18px; font-family:\'JetBrains Mono\', monospace; font-size:0.78rem; margin-bottom:12px;">'

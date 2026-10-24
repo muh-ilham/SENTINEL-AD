@@ -1,0 +1,47 @@
+# ==============================================================================
+# SENTINEL-AD: TNI AD Cognitive Defense & Threat Intelligence System
+# Docker Compose Orchestration - Secure MILNET On-Premise & Cloud Hybrid
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  sentinel-ad-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sentinel-ad-military-core
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - MILNET_ENCRYPTION_MODE=AES-256-GCM
+      - DATA_SOURCE_MODE=live
+      - PUSSIBERAD_GATEWAY_ACTIVE=true
+      - DISPENAD_WARGAMING_ENABLED=true
+    volumes:
+      # Persistent local storage for SOAR history, audit trails, and evidence dossiers
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '4.00'
+          memory: 4096M
+        reservations:
+          cpus: '1.00'
+          memory: 1024M
+    networks:
+      - milnet-secure-network
+
+networks:
+  milnet-secure-network:
+    name: milnet-secure-network
+    driver: bridge
